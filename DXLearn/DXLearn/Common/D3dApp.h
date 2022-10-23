@@ -17,4 +17,11 @@ public:
 
 protected:
     bool InitDirect3D();
+    void BuildDXGIFactory();
+    void BuildD3DDevice();
+
+protected:
+    Microsoft::WRL::ComPtr<IDXGIFactory4> mDxgiFactory;
+    Microsoft::WRL::ComPtr<IDXGIDevice> mD3dDevice;
+    Microsoft::WRL::ComPtr<IDXGIAdapter> mDxgiAdapter;
 };
