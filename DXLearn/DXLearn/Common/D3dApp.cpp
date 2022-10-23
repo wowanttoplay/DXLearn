@@ -42,7 +42,7 @@ float D3dApp::GetAspectRatio() const
 
 bool D3dApp::Initialize()
 {
-    if (InitMainWindow())
+    if (!InitMainWindow())
     {
         return false;
     }
