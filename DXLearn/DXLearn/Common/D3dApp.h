@@ -31,9 +31,6 @@ public:
     HWND GetMainWnd() const;
     float GetAspectRatio() const;
 
-    bool GetMsaaState() const;
-    void SetMsaaState(bool MsaaState);
-
     virtual bool Initialize();
     virtual LRESULT MSgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lparam);
 
@@ -46,5 +43,5 @@ protected:
     HINSTANCE mhAppInst = nullptr; // Application instance handle
     HWND mhMainWnd = nullptr; // Main window handle
     std::wstring mMainWndCaption = L"d3d App";
-    UINT mClinetWidth = 800, mClinetHeight = 600;
+    long mClinetWidth = 800, mClinetHeight = 600;
 };

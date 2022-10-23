@@ -18,7 +18,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, in
         }
         theApp.Run();
     }
-    catch (...)
+    catch (DxExpection& e)
     {
+        MessageBox(nullptr, e.ToString().c_str(), TEXT("HR Failed"), MB_OK);
+        return 0;
     }
+    return 0;
 }
