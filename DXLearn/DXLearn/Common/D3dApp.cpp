@@ -22,6 +22,8 @@ bool D3dApp::Initialize()
         return false;
     }
 
+    
+
     return true;
 }
 
@@ -244,5 +246,50 @@ void D3dApp::LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format) cons
                 TEXT("Refresh : ") + std::to_wstring(n) + TEXT("/") + std::to_wstring(d) +
                     TEXT("\n");
         OutputDebugString(info.c_str());
+    }
+}
+
+void D3dApp::OnResize()
+{
+    assert(mDxgiFactory);
+    assert(mD3dDevice);
+    assert(mSwapChain);
+    assert(mCommandQueue);
+    assert(mCommandAlloctor);
+    assert(mCommandList);
+
+    // Flush before changing any resource
+    FlushCommandQueue();
+
+    ThrowIfFailed(mCommandList->Reset(mCommandAlloctor.Get(), nullptr));
+
+    // Release the previous resource we will be recreating
+    for (int SwapChainIndex = 0; SwapChainIndex < mSwapChainBufferNumber; ++SwapChainIndex)
+    {
+        mSwapChainBuffer[SwapChainIndex].Reset();
+    }
+    mDepthStencilBuffer.Reset();
+
+    // Resize the swap chain
+    ThrowIfFailed(mSwapChain->ResizeBuffers(mSwapChainBufferNumber, mClinetWidth, mClinetHeight, mBackBufferFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
+    mCurrentSwapChainIndex = 0;
+}
+
+void D3dApp::FlushCommandQueue()
+{
+    // Advance the fence value to mark command up to this fence point
+    mCurrentFence += 1;
+    ThrowIfFailed(mCommandQueue->Signal(mFence.Get(), mCurrentFence));
+
+    // Wait until the GPU has completed commands up to the fence point
+    if (mFence->GetCompletedValue() < mCurrentFence)
+    {
+        HANDLE eventHandle = CreateEventEx(nullptr, false, false, EVENT_ALL_ACCESS);
+
+        ThrowIfFailed(mFence->SetEventOnCompletion(mCurrentFence, eventHandle));
+
+        // wait until the gpu hits current fence event
+        WaitForSingleObject(eventHandle, INFINITE);
+        CloseHandle(eventHandle);
     }
 }
