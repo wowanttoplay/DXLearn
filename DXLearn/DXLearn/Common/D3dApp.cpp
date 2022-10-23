@@ -55,6 +55,18 @@ bool D3dApp::InitDirect3D()
 
     BuildD3DDevice();
 
+    BuildFence();
+
+    InitDescHandleSize();
+
+    InitMsaaState();
+
+    CreateCommandObjects();
+
+    CreateSwapChain();
+
+    CreateRtvAndDsvDescHeap();
+
     return true;
 }
 
@@ -77,7 +89,93 @@ void D3dApp::BuildD3DDevice()
 #ifdef _DEBUG
     LogAdapters();
 #endif
+}
+
+void D3dApp::BuildFence()
+{
+    ThrowIfFailed(mD3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
+}
+
+void D3dApp::InitDescHandleSize()
+{
+    mRtvDescHandleSize = mD3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+    mDscDescHandleSize = mD3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+    mCbvHandleSize = mD3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+}
+
+void D3dApp::InitMsaaState()
+{
+    D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msQualityLevels;
+    msQualityLevels.Format = mBackBufferFormat;
+    msQualityLevels.SampleCount = 4;
+    msQualityLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
+    msQualityLevels.NumQualityLevels = 0;
+
+    ThrowIfFailed(mD3dDevice->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msQualityLevels, sizeof(msQualityLevels)));
+
+    mMsaaQuality = msQualityLevels.NumQualityLevels;
+    assert(mMsaaQuality > 0);
+}
+
+void D3dApp::CreateCommandObjects()
+{
+    // create command queue
+    D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+    queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+    queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+    ThrowIfFailed(mD3dDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mCommandQueue)));
+
+    // create command allocator
+    ThrowIfFailed(mD3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&mCommandAlloctor)));
+
+    // create command list
+    ThrowIfFailed(mD3dDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, mCommandAlloctor.Get(), nullptr, IID_PPV_ARGS(&mCommandList)));
+
+    // Close command list
+    mCommandList->Close();
+}
+
+void D3dApp::CreateSwapChain()
+{
+    // Release the previous swapchain will be recreating
+    mSwapChain.Reset();
+
+    DXGI_SWAP_CHAIN_DESC swapChainDesc;
+    swapChainDesc.BufferDesc.Width = mClinetWidth;
+    swapChainDesc.BufferDesc.Height = mClinetHeight;
+    swapChainDesc.BufferDesc.RefreshRate.Numerator = 120;
+    swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
+    swapChainDesc.BufferDesc.Format = mBackBufferFormat;
+    swapChainDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+    swapChainDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+    swapChainDesc.SampleDesc.Count = mMsaaState ? 4 : 1;
+    swapChainDesc.SampleDesc.Quality = mMsaaState ? mMsaaQuality - 1 : 0;
+    swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    swapChainDesc.BufferCount = 2;
+    swapChainDesc.OutputWindow = mhMainWnd;
+    swapChainDesc.Windowed = true;
+    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+    swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
     
+    // create swap chain, swap chain need command queue to perform flush
+    ThrowIfFailed(mDxgiFactory->CreateSwapChain(mCommandQueue.Get(), &swapChainDesc, &mSwapChain));
+}
+
+void D3dApp::CreateRtvAndDsvDescHeap()
+{
+    D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc;
+    rtvHeapDesc.NumDescriptors = mSwapChainBufferNumber;
+    rtvHeapDesc.NodeMask = 0;
+    rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+    rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+    ThrowIfFailed(mD3dDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&mRtvHeap)));
+
+    D3D12_DESCRIPTOR_HEAP_DESC DsvHeapDesc;
+    DsvHeapDesc.NumDescriptors = 1;
+    DsvHeapDesc.NodeMask = 0;
+    DsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+    DsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+    ThrowIfFailed(mD3dDevice->CreateDescriptorHeap(&DsvHeapDesc, IID_PPV_ARGS(&mDsvHeap)));
 }
 
 void D3dApp::LogAdapters() const
