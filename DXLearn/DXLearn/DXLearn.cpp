@@ -1,5 +1,6 @@
 
 #include <DirectXColors.h>
+#include "Common/BaseWindow.h"
 #include "Common/D3dApp.h"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, int showCmd)
@@ -18,7 +19,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, in
         }
         theApp.Run();
     }
-    catch (DxExpection& e)
+    catch (DxException& e)
     {
         MessageBox(nullptr, e.ToString().c_str(), TEXT("HR Failed"), MB_OK);
         return 0;

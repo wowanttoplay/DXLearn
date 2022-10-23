@@ -3,7 +3,7 @@
 
 using Microsoft::WRL::ComPtr;
 
-DxExpection::DxExpection(HRESULT hresult, const std::wstring& functionName, const std::wstring& fileName,
+DxException::DxException(HRESULT hresult, const std::wstring& functionName, const std::wstring& fileName,
     int lineNumber)
         :ErrorCode(hresult),
 FunctionName(functionName),
@@ -12,7 +12,7 @@ LineNumber(lineNumber)
 {
 }
 
-std::wstring DxExpection::ToString() const
+std::wstring DxException::ToString() const
 {
      _com_error err(ErrorCode);
     std::wstring msg = err.ErrorMessage();

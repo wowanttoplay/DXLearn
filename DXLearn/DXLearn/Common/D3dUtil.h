@@ -5,6 +5,11 @@
 #include <string>
 #include <sstream>
 #include <unordered_map>
+#include <d3d12.h>
+#include <DirectXMath.h>
+#include <D3Dcompiler.h>
+#include <DirectXCollision.h>
+
 
 class D3dUtil
 {
@@ -12,11 +17,11 @@ public:
     
 };
 
-class DxExpection
+class DxException
 {
 public:
-    DxExpection() = default;
-    DxExpection(HRESULT hresult, const std::wstring& functionName, const std::wstring& fileName, int lineNumber);
+    DxException() = default;
+    DxException(HRESULT hresult, const std::wstring& functionName, const std::wstring& fileName, int lineNumber);
 
     std::wstring ToString() const;
 
@@ -25,3 +30,19 @@ public:
     std::wstring FileName;
     int LineNumber;
 };
+
+inline std::wstring AnsiToWString(const std::string& str)
+{
+    WCHAR buffer[512];
+    MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, buffer, 512);
+    return std::wstring(buffer);
+}
+
+#ifndef ThrowIfFailed
+#define ThrowIfFailed(x)                                              \
+{                                                                     \
+HRESULT hr__ = (x);                                               \
+std::wstring wfn = AnsiToWString(__FILE__);                       \
+if(FAILED(hr__)) { throw DxException(hr__, L#x, wfn, __LINE__); } \
+}
+#endif
