@@ -30,10 +30,15 @@ protected:
     void LogAdapters() const; // show all display adapter
     void LogAdapterOutputs(IDXGIAdapter* adapter) const;
     void LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format) const;
+    void ResetSwapChain();
+    void CreateRenderTargetBufferAndView();
+    void CreateDepthStencilBufferAndView();
 
     //
     virtual void OnResize();
     void FlushCommandQueue();
+    D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView() const;
+    D3D12_CPU_DESCRIPTOR_HANDLE RenderTargetView() const;
     
 
 protected:
@@ -62,5 +67,9 @@ protected:
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mRtvHeap;
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mDsvHeap;
 
+    D3D12_VIEWPORT mViewport;
+    D3D12_RECT mScissorRect;
+
     DXGI_FORMAT mBackBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+    DXGI_FORMAT mDepthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 };

@@ -1,6 +1,8 @@
 ﻿#include "D3dApp.h"
 #include <windowsx.h>
 
+#include "d3dx12.h"
+
 using Microsoft::WRL::ComPtr;
 using namespace std;
 using namespace DirectX;
@@ -22,7 +24,7 @@ bool D3dApp::Initialize()
         return false;
     }
 
-    
+    OnResize();
 
     return true;
 }
@@ -249,6 +251,65 @@ void D3dApp::LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format) cons
     }
 }
 
+void D3dApp::ResetSwapChain()
+{
+    // Release the previous resource we will be recreating
+    for (int SwapChainIndex = 0; SwapChainIndex < mSwapChainBufferNumber; ++SwapChainIndex)
+    {
+        mSwapChainBuffer[SwapChainIndex].Reset();
+    }
+    mDepthStencilBuffer.Reset();
+
+    // Resize the swap chain
+    ThrowIfFailed(mSwapChain->ResizeBuffers(mSwapChainBufferNumber, mClinetWidth, mClinetHeight, mBackBufferFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
+    mCurrentSwapChainIndex = 0;
+}
+
+void D3dApp::CreateRenderTargetBufferAndView()
+{
+    // create render target view,use swap chain buffer as render target buffer,dimension
+    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeaphandle(mRtvHeap->GetCPUDescriptorHandleForHeapStart());
+    for (size_t index = 0; index < mSwapChainBufferNumber; ++index)
+    {
+        ThrowIfFailed(mSwapChain->GetBuffer(index, IID_PPV_ARGS(&mSwapChainBuffer[index])));
+        mD3dDevice->CreateRenderTargetView(mSwapChainBuffer[index].Get(), nullptr, rtvHeaphandle);
+        rtvHeaphandle.Offset(1, mRtvDescHandleSize);
+    }
+}
+
+void D3dApp::CreateDepthStencilBufferAndView()
+{
+    // create the depth stencil buffer
+    D3D12_RESOURCE_DESC depthStencilDesc;
+    depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    depthStencilDesc.Alignment = 0;
+    depthStencilDesc.Width = mClinetWidth;
+    depthStencilDesc.Height = mClinetHeight;
+    depthStencilDesc.DepthOrArraySize = 1;
+    depthStencilDesc.MipLevels = 1;
+    depthStencilDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+    depthStencilDesc.SampleDesc.Count = mMsaaState ? 4 : 1;
+    depthStencilDesc.SampleDesc.Quality = mMsaaState ? mMsaaQuality - 1 : 0;
+    depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+    D3D12_CLEAR_VALUE optClear;
+    optClear.Format = mDepthStencilFormat;
+    optClear.DepthStencil.Depth = 1.0f;
+    optClear.DepthStencil.Stencil = 0;
+
+    ThrowIfFailed(mD3dDevice->CreateCommittedResource(
+        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+        D3D12_HEAP_FLAG_NONE,
+        &depthStencilDesc,
+        D3D12_RESOURCE_STATE_COMMON,
+        &optClear,
+        IID_PPV_ARGS(&mDepthStencilBuffer)
+    ));
+    // create the depth stencil view
+    mD3dDevice->CreateDepthStencilView(mDepthStencilBuffer.Get(), nullptr, DepthStencilView());
+}
+
 void D3dApp::OnResize()
 {
     assert(mDxgiFactory);
@@ -263,16 +324,30 @@ void D3dApp::OnResize()
 
     ThrowIfFailed(mCommandList->Reset(mCommandAlloctor.Get(), nullptr));
 
-    // Release the previous resource we will be recreating
-    for (int SwapChainIndex = 0; SwapChainIndex < mSwapChainBufferNumber; ++SwapChainIndex)
-    {
-        mSwapChainBuffer[SwapChainIndex].Reset();
-    }
-    mDepthStencilBuffer.Reset();
+    ResetSwapChain();
 
-    // Resize the swap chain
-    ThrowIfFailed(mSwapChain->ResizeBuffers(mSwapChainBufferNumber, mClinetWidth, mClinetHeight, mBackBufferFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
-    mCurrentSwapChainIndex = 0;
+    CreateRenderTargetBufferAndView();
+    
+    CreateDepthStencilBufferAndView();
+    
+    // Transition the resource state from common to depth write
+    mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mDepthStencilBuffer.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE));
+
+    // Excute the resize command
+    ThrowIfFailed(mCommandList->Close());
+    ID3D12CommandList* cmdList[] = {mCommandList.Get()};
+    mCommandQueue->ExecuteCommandLists(_countof(cmdList), cmdList);
+    FlushCommandQueue();
+    
+    // Update the viewport transform to cover the clinet area
+    mViewport.TopLeftX = 0;
+    mViewport.TopLeftY = 0;
+    mViewport.Width = static_cast<float>(mClinetWidth);
+    mViewport.Height = static_cast<float>(mClinetHeight);
+    mViewport.MinDepth = 0.0f;
+    mViewport.MaxDepth = 1.0f;
+
+    mScissorRect = {0, 0, mClinetWidth, mClinetHeight};
 }
 
 void D3dApp::FlushCommandQueue()
@@ -292,4 +367,18 @@ void D3dApp::FlushCommandQueue()
         WaitForSingleObject(eventHandle, INFINITE);
         CloseHandle(eventHandle);
     }
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE D3dApp::DepthStencilView() const
+{
+    return mDsvHeap->GetCPUDescriptorHandleForHeapStart();
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE D3dApp::RenderTargetView() const
+{
+    return CD3DX12_CPU_DESCRIPTOR_HANDLE(
+        mRtvHeap->GetCPUDescriptorHandleForHeapStart(),
+        mCurrentSwapChainIndex,
+        mRtvDescHandleSize
+    );
 }
