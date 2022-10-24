@@ -269,7 +269,7 @@ void D3dApp::CreateRenderTargetBufferAndView()
 {
     // create render target view,use swap chain buffer as render target buffer,dimension
     CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeaphandle(mRtvHeap->GetCPUDescriptorHandleForHeapStart());
-    for (size_t index = 0; index < mSwapChainBufferNumber; ++index)
+    for (UINT index = 0; index < mSwapChainBufferNumber; ++index)
     {
         ThrowIfFailed(mSwapChain->GetBuffer(index, IID_PPV_ARGS(&mSwapChainBuffer[index])));
         mD3dDevice->CreateRenderTargetView(mSwapChainBuffer[index].Get(), nullptr, rtvHeaphandle);
@@ -304,7 +304,7 @@ void D3dApp::CreateDepthStencilBufferAndView()
         &depthStencilDesc,
         D3D12_RESOURCE_STATE_COMMON,
         &optClear,
-        IID_PPV_ARGS(&mDepthStencilBuffer)
+        IID_PPV_ARGS(mDepthStencilBuffer.GetAddressOf())
     ));
     // create the depth stencil view
     mD3dDevice->CreateDepthStencilView(mDepthStencilBuffer.Get(), nullptr, DepthStencilView());
@@ -331,7 +331,8 @@ void D3dApp::OnResize()
     CreateDepthStencilBufferAndView();
     
     // Transition the resource state from common to depth write
-    mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mDepthStencilBuffer.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE));
+    mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mDepthStencilBuffer.Get(),
+         D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE));
 
     // Excute the resize command
     ThrowIfFailed(mCommandList->Close());
