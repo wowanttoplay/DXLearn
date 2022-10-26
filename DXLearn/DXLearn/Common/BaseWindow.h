@@ -41,6 +41,6 @@ protected:
 
     HINSTANCE mhAppInst = nullptr; // Application instance handle
     HWND mhMainWnd = nullptr; // Main window handle
-    std::wstring mMainWndCaption = L"d3d App";
+    std::wstring mMainWndCaption = TEXT("BaseWindow");
     long mClinetWidth = 800, mClinetHeight = 600;
 };

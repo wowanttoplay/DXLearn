@@ -10,6 +10,7 @@ using namespace DirectX;
 D3dApp::D3dApp(HINSTANCE hInsatnce) :
 BaseWindow(hInsatnce)
 {
+    mMainWndCaption = TEXT("D3dApp");
 }
 
 bool D3dApp::Initialize()
@@ -31,7 +32,21 @@ bool D3dApp::Initialize()
 
 int D3dApp::Run()
 {
-    return BaseWindow::Run();
+   MSG msg = {0};
+
+   while (msg.message != WM_QUIT)
+   {
+       if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
+       {
+           TranslateMessage(&msg);
+           DispatchMessage(&msg);
+       }
+       else
+       {
+       }
+   }
+
+    return static_cast<int>(msg.wParam);
 }
 
 LRESULT D3dApp::MSgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lparam)

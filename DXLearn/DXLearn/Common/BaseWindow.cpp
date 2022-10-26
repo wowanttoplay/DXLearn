@@ -75,10 +75,6 @@ LRESULT BaseWindow::MSgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lparam)
         return 0;
     case WM_MENUCHAR:
         return MAKELRESULT(0, MNC_CLOSE);
-    case WM_GETMINMAXINFO:
-        ((MINMAXINFO*)lparam)->ptMinTrackSize.x = 200;
-        ((MINMAXINFO*)lparam)->ptMinTrackSize.y = 200;
-        return 0;
     case WM_KEYUP:
         if (wParam == VK_ESCAPE)
         {
