@@ -47,6 +47,7 @@ protected:
     void FlushCommandQueue();
     D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView() const;
     D3D12_CPU_DESCRIPTOR_HANDLE RenderTargetView() const;
+    ID3D12Resource* CurrentRenderTargetBuffer() const;
     
 
 protected:

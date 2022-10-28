@@ -442,8 +442,14 @@ void D3dApp::CreateDepthStencilBufferAndView()
         &optClear,
         IID_PPV_ARGS(mDepthStencilBuffer.GetAddressOf())
     ));
+
+    D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
+    dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
+    dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+    dsvDesc.Format = mDepthStencilFormat;
+    dsvDesc.Texture2D.MipSlice = 0;
     // create the depth stencil view
-    mD3dDevice->CreateDepthStencilView(mDepthStencilBuffer.Get(), nullptr, DepthStencilView());
+    mD3dDevice->CreateDepthStencilView(mDepthStencilBuffer.Get(), &dsvDesc, DepthStencilView());
 }
 
 void D3dApp::OnResize()
@@ -528,6 +534,11 @@ D3D12_CPU_DESCRIPTOR_HANDLE D3dApp::RenderTargetView() const
         mCurrentSwapChainIndex,
         mRtvDescHandleSize
     );
+}
+
+ID3D12Resource* D3dApp::CurrentRenderTargetBuffer() const
+{
+    return mSwapChainBuffer[mCurrentSwapChainIndex].Get();
 }
 
 void D3dApp::CalculateFrameState() const
