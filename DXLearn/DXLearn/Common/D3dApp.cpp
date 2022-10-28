@@ -34,6 +34,8 @@ int D3dApp::Run()
 {
    MSG msg = {0};
 
+    mTimer.Reset();
+    
    while (msg.message != WM_QUIT)
    {
        if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
@@ -43,15 +45,134 @@ int D3dApp::Run()
        }
        else
        {
+           mTimer.Tick();
+
+           if (!mAppPaused)
+           {
+               CalculateFrameState();
+               Update(mTimer);
+               Draw(mTimer);
+           }
+           else
+           {
+               Sleep(100);
+           }
        }
    }
 
     return static_cast<int>(msg.wParam);
 }
 
-LRESULT D3dApp::MSgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lparam)
+LRESULT D3dApp::MSgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    return BaseWindow::MSgProc(hWnd, msg, wParam, lparam);
+    switch (msg)
+    {
+        // WM_ACTIVATE is sent when the window is activated or deactivated.  
+        // We pause the game when the window is deactivated and unpause it 
+        // when it becomes active. 
+    case WM_ACTIVATE:
+        if (LOWORD(wParam) == WA_INACTIVE)
+        {
+            mAppPaused = true;
+            mTimer.Stop();
+        }
+        else
+        {
+            mAppPaused = false;
+            mTimer.Start();
+        }
+        return 0;
+        // WM_SIZE is sent when the user resizes the window. 
+    case WM_SIZE:
+        mClinetWidth = LOWORD(lParam);
+        mClinetHeight = HIWORD(lParam);
+        if (mD3dDevice)
+        {
+            if (wParam == SIZE_MINIMIZED)
+            {
+                mAppPaused = true;
+                mMinimized = true;
+                mMaximized = false;
+            }
+            else if (wParam == SIZE_MAXIMIZED)
+            {
+                mAppPaused = false;
+                mMinimized = false;
+                mMaximized = true;
+            }
+            else if (wParam == SIZE_RESTORED)
+            {
+                if (mMinimized)
+                {
+                    mAppPaused = false;
+                    mMinimized = false;
+                    OnResize();
+                }
+                else if (mMaximized)
+                {
+                    mAppPaused = false;
+                    mMaximized = false;
+                    OnResize();
+                }
+                else if (mResizing)
+                {
+                    
+                }
+                else
+                {
+                    OnResize();
+                }
+            }
+        }
+        return 0;
+    case WM_ENTERSIZEMOVE:
+        mAppPaused = true;
+        mResizing = true;
+        mTimer.Stop();
+        return 0;
+    case WM_EXITSIZEMOVE:
+        mAppPaused = false;
+        mResizing = false;
+        mTimer.Start();
+        OnResize();
+        return 0;
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        return 0;
+        // The WM_MENUCHAR message is sent when a menu is active and the user presses 
+        // a key that does not correspond to any mnemonic or accelerator key. 
+    case WM_MENUCHAR:
+        return MAKELRESULT(0, MNC_CLOSE);
+        // Catch this message so to prevent the window from becoming too small.
+    case WM_GETMINMAXINFO:
+        ((MINMAXINFO*)lParam)->ptMinTrackSize.x = 200;
+        ((MINMAXINFO*)lParam)->ptMinTrackSize.y = 200; 
+        return 0;
+        
+    case WM_LBUTTONDOWN:
+    case WM_MBUTTONDOWN:
+    case WM_RBUTTONDOWN:
+    OnMouseDown(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+        return 0;
+    case WM_LBUTTONUP:
+    case WM_MBUTTONUP:
+    case WM_RBUTTONUP:
+        OnMouseUp(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+        return 0;
+    case WM_MOUSEMOVE:
+        OnMouseMove(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+        return 0;
+    case WM_KEYUP:
+        if(wParam == VK_ESCAPE)
+        {
+            PostQuitMessage(0);
+        }
+        else if((int)wParam == VK_F2)
+            SetMsaaState(!mMsaaState);
+
+        return 0;
+    }
+    return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
 float D3dApp::GetAspectRatio() const
@@ -366,6 +487,16 @@ void D3dApp::OnResize()
     mScissorRect = {0, 0, mClinetWidth, mClinetHeight};
 }
 
+void D3dApp::SetMsaaState(bool InState)
+{
+    if (mMsaaState != InState)
+    {
+        mMsaaState = InState;
+        CreateSwapChain();
+        OnResize();
+    }
+}
+
 void D3dApp::FlushCommandQueue()
 {
     // Advance the fence value to mark command up to this fence point
@@ -397,4 +528,30 @@ D3D12_CPU_DESCRIPTOR_HANDLE D3dApp::RenderTargetView() const
         mCurrentSwapChainIndex,
         mRtvDescHandleSize
     );
+}
+
+void D3dApp::CalculateFrameState() const
+{
+    static int frameCount = 0;
+    static float timeElapsed = 0.0f;
+
+    frameCount += 1;
+
+    //Compute averages over one second period
+    if (mTimer.TotalTime() - timeElapsed >= 1.0f)
+    {
+        const auto fps = static_cast<float>(frameCount); // fps = frameCount / 1;
+        const float mspf = 1000.0f / fps;
+
+        const wstring fpsStr = to_wstring(fps);
+        const wstring mspfStr = to_wstring(mspf);
+
+        const wstring windowText = mMainWndCaption + TEXT("\tfps: ") + fpsStr + TEXT("\tmspf: ") + mspfStr;
+
+        SetWindowText(mhMainWnd, windowText.c_str());
+
+        // Reset fro the next seconds
+        frameCount = 0;
+        timeElapsed += 1.0f;
+    }
 }

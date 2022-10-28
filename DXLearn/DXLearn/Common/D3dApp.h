@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "BaseWindow.h"
+#include "GameTimer.h"
 
 class D3dApp : public BaseWindow
 {
@@ -9,11 +10,17 @@ public:
 public:
     virtual bool Initialize() override;
     virtual int Run() override;
-    virtual LRESULT MSgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lparam) override;
+    virtual void Update(const GameTimer& InGameTime) = 0;
+    virtual void Draw(const GameTimer& InGameTime) = 0;
+    virtual LRESULT MSgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) override;
 
+    virtual void OnMouseDown(WPARAM btnState, int x, int y){ }
+    virtual void OnMouseUp(WPARAM btnState, int x, int y)  { }
+    virtual void OnMouseMove(WPARAM btnState, int x, int y){ }
 
 public:
     float GetAspectRatio() const;
+
 
 protected:
     // Init direct 3d
@@ -36,6 +43,7 @@ protected:
 
     //
     virtual void OnResize();
+    void SetMsaaState(bool InState);
     void FlushCommandQueue();
     D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView() const;
     D3D12_CPU_DESCRIPTOR_HANDLE RenderTargetView() const;
@@ -72,4 +80,15 @@ protected:
 
     DXGI_FORMAT mBackBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
     DXGI_FORMAT mDepthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+
+protected:
+    void CalculateFrameState() const;
+protected:
+    GameTimer mTimer;
+    bool mAppPaused; // is the application paused
+    bool mMinimized; // is the application minimized?
+    bool mMaximized; // is the application maximized?
+    bool mResizing = false; // are the resize bars being dragged
+    bool mFullScreenState = false; // full screen enabled
+    
 };
