@@ -9,7 +9,7 @@ public:
 
 public:
     virtual bool Initialize() override;
-    virtual int Run() override;
+    int Run() override;
     virtual void Update(const GameTimer& InGameTime) = 0;
     virtual void Draw(const GameTimer& InGameTime) = 0;
     virtual LRESULT MSgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) override;
