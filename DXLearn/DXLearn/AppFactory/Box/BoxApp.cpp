@@ -20,6 +20,7 @@ bool BoxApp::Initialize()
     ThrowIfFailed(mCommandList->Reset(mCommandAlloctor.Get(), nullptr));
 
     BuildBoxGeometry();
+    
 }
 
 void BoxApp::Update(const GameTimer& InGameTime)
@@ -120,4 +121,14 @@ void BoxApp::BuildBoxGeometry()
     subMesh.StartIndexLocation = 0;
 
     mBoxGeo->DrawArgs["box"] = subMesh;
+}
+
+void BoxApp::BuildConstantBufferViewHeap()
+{
+    D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
+    cbvHeapDesc.NumDescriptors  = 1;
+    cbvHeapDesc.NodeMask = 0;
+    cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+    cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+    ThrowIfFailed(mD3dDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&mCbvHeap)));
 }

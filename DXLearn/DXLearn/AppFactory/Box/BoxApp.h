@@ -26,8 +26,10 @@ private:
 
 private:
     void BuildBoxGeometry();
+    void BuildConstantBufferViewHeap();
 
 private:
     std::unique_ptr<MeshGeometry> mBoxGeo;
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mCbvHeap = nullptr;
     
 };
