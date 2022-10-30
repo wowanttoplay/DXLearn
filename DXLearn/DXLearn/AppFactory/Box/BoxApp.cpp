@@ -23,7 +23,8 @@ bool BoxApp::Initialize()
 
     BuildConstantBufferViewHeap();
     BuildConstantBuffersAndView();
-    
+
+    BuildRootSignature();
 }
 
 void BoxApp::Update(const GameTimer& InGameTime)
@@ -149,4 +150,30 @@ void BoxApp::BuildConstantBuffersAndView()
     cbvDesc.SizeInBytes = mConstantBuffer->GetElementByteSize();
 
     mD3dDevice->CreateConstantBufferView(&cbvDesc, mCbvHeap->GetCPUDescriptorHandleForHeapStart());
+}
+
+void BoxApp::BuildRootSignature()
+{
+    CD3DX12_ROOT_PARAMETER slotRootParameter[1];
+
+    // create a single descriptor table of CBVs
+    CD3DX12_DESCRIPTOR_RANGE cbvTables;
+    cbvTables.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
+    slotRootParameter[0].InitAsDescriptorTable(1, &cbvTables);
+
+    // A root signature is an array of root  parameters
+    CD3DX12_ROOT_SIGNATURE_DESC rootSignaturedesc(1, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+    // Create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
+    Microsoft::WRL::ComPtr<ID3DBlob> serializeRootSig = nullptr;
+    Microsoft::WRL::ComPtr<ID3DBlob> errBlob = nullptr;
+    HRESULT rst = D3D12SerializeRootSignature(&rootSignaturedesc, D3D_ROOT_SIGNATURE_VERSION_1, serializeRootSig.GetAddressOf(), errBlob.GetAddressOf());
+
+    if (errBlob)
+    {
+        OutputDebugStringA(static_cast<char*>(errBlob->GetBufferPointer()));
+    }
+    ThrowIfFailed(rst);
+
+    ThrowIfFailed(mD3dDevice->CreateRootSignature(0, serializeRootSig->GetBufferPointer(), serializeRootSig->GetBufferSize(), IID_PPV_ARGS(&mRootSignature)));
 }

@@ -35,9 +35,11 @@ private:
     void BuildBoxGeometry();
     void BuildConstantBufferViewHeap();
     void BuildConstantBuffersAndView();
+    void BuildRootSignature();
 
 private:
     std::unique_ptr<MeshGeometry> mBoxGeo;
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mCbvHeap = nullptr;
     std::unique_ptr<UploadBuffer<ObjectConstants>> mConstantBuffer = nullptr;
+    Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature;
 };
