@@ -1,5 +1,12 @@
 ﻿#pragma once
 #include "../../Common/D3dApp.h"
+#include "../../Common/MathHelper.h"
+#include "../../Common/UploadBuffer.h"
+
+struct ObjectConstants
+{
+    DirectX::XMFLOAT4X4 WorldViewProj = MathHelper::Identity4x4();
+};
 
 class BoxApp : public D3dApp
 {
@@ -27,9 +34,10 @@ private:
 private:
     void BuildBoxGeometry();
     void BuildConstantBufferViewHeap();
+    void BuildConstantBuffersAndView();
 
 private:
     std::unique_ptr<MeshGeometry> mBoxGeo;
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mCbvHeap = nullptr;
-    
+    std::unique_ptr<UploadBuffer<ObjectConstants>> mConstantBuffer = nullptr;
 };

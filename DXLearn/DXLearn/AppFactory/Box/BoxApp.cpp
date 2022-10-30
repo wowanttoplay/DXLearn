@@ -22,6 +22,8 @@ bool BoxApp::Initialize()
     BuildBoxGeometry();
 
     BuildConstantBufferViewHeap();
+    BuildConstantBuffersAndView();
+    
 }
 
 void BoxApp::Update(const GameTimer& InGameTime)
@@ -132,4 +134,19 @@ void BoxApp::BuildConstantBufferViewHeap()
     cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
     ThrowIfFailed(mD3dDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&mCbvHeap)));
+}
+
+void BoxApp::BuildConstantBuffersAndView()
+{
+    mConstantBuffer = std::make_unique<UploadBuffer<ObjectConstants>>(mD3dDevice.Get(), 1, true);
+
+    D3D12_GPU_VIRTUAL_ADDRESS cbAddress = mConstantBuffer->GetResource()->GetGPUVirtualAddress();
+    UINT boxConstantIndex = 0;
+    cbAddress += boxConstantIndex * mConstantBuffer->GetElementByteSize();
+
+    D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
+    cbvDesc.BufferLocation = cbAddress;
+    cbvDesc.SizeInBytes = mConstantBuffer->GetElementByteSize();
+
+    mD3dDevice->CreateConstantBufferView(&cbvDesc, mCbvHeap->GetCPUDescriptorHandleForHeapStart());
 }
