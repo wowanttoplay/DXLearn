@@ -20,6 +20,7 @@ bool BoxApp::Initialize()
     ThrowIfFailed(mCommandList->Reset(mCommandAlloctor.Get(), nullptr));
 
     BuildBoxGeometry();
+
     BuildConstantBufferViewHeap();
 }
 
