@@ -29,8 +29,8 @@ private:
 template <typename T>
 UploadBuffer<T>::UploadBuffer(ID3D12Device* device, UINT elementCount, bool bContantBuffer)
 {
-    mbConstantBuffer = mbConstantBuffer;
-
+    mbConstantBuffer = bContantBuffer;
+    mElementByteSize = sizeof(T);
     // Constant buffer elements need to be multiples of 256 bytes.
     // This is because the hardware can only view constant data 
     // at m*256 byte offsets and of n*256 byte lengths. 

@@ -20,26 +20,30 @@ public:
     BoxApp& operator=(const BoxApp& other) = delete;
     virtual ~BoxApp() = default;
 
-private:
-    virtual bool Initialize() override;
-    
+   virtual bool Initialize() override;
+protected:
     virtual void Update(const GameTimer& InGameTime) override;
     virtual void Draw(const GameTimer& InGameTime) override;
     virtual void OnResize() override;
-
-    virtual void OnMouseUp(WPARAM btnState, int x, int y) override;
-    virtual void OnMouseDown(WPARAM btnState, int x, int y) override;
-    virtual void OnMouseMove(WPARAM btnState, int x, int y) override;
 
 private:
     void BuildBoxGeometry();
     void BuildConstantBufferViewHeap();
     void BuildConstantBuffersAndView();
+    void BuildShadersAndInputLayout();
     void BuildRootSignature();
+    void BuildPSO();
 
 private:
     std::unique_ptr<MeshGeometry> mBoxGeo;
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mCbvHeap = nullptr;
     std::unique_ptr<UploadBuffer<ObjectConstants>> mConstantBuffer = nullptr;
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature;
+
+    Microsoft::WRL::ComPtr<ID3DBlob> mVsByteCode = nullptr;
+    Microsoft::WRL::ComPtr<ID3DBlob> mPsByteCode = nullptr;
+    std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
+    
+    Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
+
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> mPSO = nullptr;
 };

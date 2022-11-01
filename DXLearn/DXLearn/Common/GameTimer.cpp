@@ -25,7 +25,7 @@ float GameTimer::TotalTime() const
 
 float GameTimer::DeltaTime() const
 {
-    return mDeltaTime;
+    return static_cast<float>(mDeltaTime);
 }
 
 void GameTimer::Reset()

@@ -2,6 +2,7 @@
 
 #include <array>
 #include <DirectXColors.h>
+#include <iostream>
 using namespace DirectX;
 
 struct BoxVertex
@@ -23,37 +24,95 @@ bool BoxApp::Initialize()
 
     BuildConstantBufferViewHeap();
     BuildConstantBuffersAndView();
-
+    
     BuildRootSignature();
+    
+    BuildShadersAndInputLayout();
+    
+    BuildPSO();
+
+    ThrowIfFailed(mCommandList->Close());
+    ID3D12CommandList* cmdList[] = {mCommandList.Get()};
+    mCommandQueue->ExecuteCommandLists(_countof(cmdList), cmdList);
+
+    FlushCommandQueue();
+
+    return true;
 }
 
 void BoxApp::Update(const GameTimer& InGameTime)
 {
+    D3dApp::Update(InGameTime);
+    XMMATRIX world = XMLoadFloat4x4(&mWorld);
+    XMMATRIX view = XMLoadFloat4x4(&mView);
+    XMMATRIX proj = XMLoadFloat4x4(&mProj);
+
+    XMMATRIX worldViewProj = world * view * proj;
+
+    ObjectConstants objConstants;
+    XMStoreFloat4x4(&objConstants.WorldViewProj, worldViewProj);
+    mConstantBuffer->CopyData(0, objConstants);
 }
 
 void BoxApp::Draw(const GameTimer& InGameTime)
 {
+    ThrowIfFailed(mCommandAlloctor->Reset());
+    ThrowIfFailed(mCommandList->Reset(mCommandAlloctor.Get(), mPSO.Get()));
+
+    // 设置视图
+    mCommandList->RSSetViewports(1, &mViewport);
+    mCommandList->RSSetScissorRects(1, &mScissorRect);
+
+    // 转换render target resource state
+    mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
+                                      CurrentRenderTargetBuffer(), D3D12_RESOURCE_STATE_PRESENT,
+                                      D3D12_RESOURCE_STATE_RENDER_TARGET));
+
+    // Clear the depth and stencil
+    mCommandList->ClearRenderTargetView(RenderTargetView(), Colors::Brown, 0, nullptr);
+    mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1, 0, 0, nullptr);
+
+    // set render target and depth stencil
+    mCommandList->OMSetRenderTargets(1, &RenderTargetView(), true, &DepthStencilView());
+
+    // bind root signature and descriptor heaps
+    mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
+    ID3D12DescriptorHeap* descHeap[] = {mCbvHeap.Get()};
+    mCommandList->SetDescriptorHeaps(_countof(descHeap), descHeap);
+
+    // set vertex and index data
+    mCommandList->IASetVertexBuffers(0, 1, &mBoxGeo->VertexBufferView());
+    mCommandList->IASetIndexBuffer(&mBoxGeo->IndexBufferView());
+    mCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
     
+    // set descriptor pointer
+    mCommandList->SetGraphicsRootDescriptorTable(0, mCbvHeap->GetGPUDescriptorHandleForHeapStart());
+
+    // draw index
+    for (auto& subMesh : mBoxGeo->DrawArgs)
+    {
+        const SubMeshGeometry& mesh = subMesh.second;
+        mCommandList->DrawIndexedInstanced(mesh.IndexCount, 1, mesh.StartIndexLocation, mesh.BaseVertexLocation, 0);
+    }
+
+    // Transition the render target resource state
+    mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentRenderTargetBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+
+    ThrowIfFailed(mCommandList->Close());
+
+    // Add command list into the command queue
+    ID3D12CommandList* cmdList[] = {mCommandList.Get()};
+    mCommandQueue->ExecuteCommandLists(1, cmdList);
+
+    ThrowIfFailed(mSwapChain->Present(0, 0));
+    mCurrentSwapChainIndex = (mCurrentSwapChainIndex + 1) % mSwapChainBufferNumber;
+    
+    FlushCommandQueue();
 }
 
 void BoxApp::OnResize()
 {
     D3dApp::OnResize();
-}
-
-void BoxApp::OnMouseUp(WPARAM btnState, int x, int y)
-{
-    D3dApp::OnMouseUp(btnState, x, y);
-}
-
-void BoxApp::OnMouseDown(WPARAM btnState, int x, int y)
-{
-    D3dApp::OnMouseDown(btnState, x, y);
-}
-
-void BoxApp::OnMouseMove(WPARAM btnState, int x, int y)
-{
-    D3dApp::OnMouseMove(btnState, x, y);
 }
 
 void BoxApp::BuildBoxGeometry()
@@ -152,28 +211,75 @@ void BoxApp::BuildConstantBuffersAndView()
     mD3dDevice->CreateConstantBufferView(&cbvDesc, mCbvHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
+void BoxApp::BuildShadersAndInputLayout()
+{
+    const std::wstring FileName = TEXT("AppFactory\\Box\\Shaders\\color.hlsl");
+    mVsByteCode = D3dUtil::CompileShader(FileName, nullptr, "VS", "vs_5_0");
+    mPsByteCode = D3dUtil::CompileShader(FileName, nullptr, "PS", "ps_5_0");
+
+    mInputLayout =
+    {
+        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+        {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+    };
+}
+
 void BoxApp::BuildRootSignature()
 {
+    // Shader programs typically require resources as input (constant buffers,
+    // textures, samplers).  The root signature defines the resources the shader
+    // programs expect.  If we think of the shader programs as a function, and
+    // the input resources as function parameters, then the root signature can be
+    // thought of as defining the function signature.  
+
+    // Root parameter can be a table, root descriptor or root constants.
     CD3DX12_ROOT_PARAMETER slotRootParameter[1];
 
-    // create a single descriptor table of CBVs
-    CD3DX12_DESCRIPTOR_RANGE cbvTables;
-    cbvTables.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
-    slotRootParameter[0].InitAsDescriptorTable(1, &cbvTables);
+    // Create a single descriptor table of CBVs.
+    CD3DX12_DESCRIPTOR_RANGE cbvTable;
+    cbvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
+    slotRootParameter[0].InitAsDescriptorTable(1, &cbvTable);
 
-    // A root signature is an array of root  parameters
-    CD3DX12_ROOT_SIGNATURE_DESC rootSignaturedesc(1, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+    // A root signature is an array of root parameters.
+    CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(1, slotRootParameter, 0, nullptr, 
+        D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
-    // Create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
-    Microsoft::WRL::ComPtr<ID3DBlob> serializeRootSig = nullptr;
-    Microsoft::WRL::ComPtr<ID3DBlob> errBlob = nullptr;
-    HRESULT rst = D3D12SerializeRootSignature(&rootSignaturedesc, D3D_ROOT_SIGNATURE_VERSION_1, serializeRootSig.GetAddressOf(), errBlob.GetAddressOf());
+    // create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
+    Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
+    Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
+    HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,
+        serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
 
-    if (errBlob)
+    if(errorBlob != nullptr)
     {
-        OutputDebugStringA(static_cast<char*>(errBlob->GetBufferPointer()));
+        ::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
     }
-    ThrowIfFailed(rst);
+    ThrowIfFailed(hr);
 
-    ThrowIfFailed(mD3dDevice->CreateRootSignature(0, serializeRootSig->GetBufferPointer(), serializeRootSig->GetBufferSize(), IID_PPV_ARGS(&mRootSignature)));
+    ThrowIfFailed(mD3dDevice->CreateRootSignature(
+        0,
+        serializedRootSig->GetBufferPointer(),
+        serializedRootSig->GetBufferSize(),
+        IID_PPV_ARGS(&mRootSignature)));
+}
+
+void BoxApp::BuildPSO()
+{
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
+    ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+    psoDesc.InputLayout = {mInputLayout.data(), static_cast<UINT>(mInputLayout.size())};
+    psoDesc.pRootSignature = mRootSignature.Get();
+    psoDesc.VS = {static_cast<BYTE*>(mVsByteCode->GetBufferPointer()), mVsByteCode->GetBufferSize()};
+    psoDesc.PS = {static_cast<byte*>(mPsByteCode->GetBufferPointer()), mPsByteCode->GetBufferSize()};
+    psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+    psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+    psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+    psoDesc.SampleMask = UINT_MAX;
+    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+    psoDesc.NumRenderTargets = 1;
+    psoDesc.RTVFormats[0] = mBackBufferFormat;
+    psoDesc.SampleDesc.Count = mMsaaState ? 4 : 1;
+    psoDesc.SampleDesc.Quality = mMsaaState ? mMsaaQuality - 1 : 0;
+    psoDesc.DSVFormat = mDepthStencilFormat;
+    ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSO)));
 }
