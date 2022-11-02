@@ -2,6 +2,7 @@
 #include <DirectXColors.h>
 
 #include "AppFactory/BaseApp.h"
+#include "AppFactory/Box/BoxApp.h"
 #include "Common/BaseWindow.h"
 #include "Common/D3dApp.h"
 
@@ -14,7 +15,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, in
 
     try
     {
-        BaseApp theApp(hInstance);
+        BoxApp theApp(hInstance);
         if (!theApp.Initialize())
         {
             return 0;

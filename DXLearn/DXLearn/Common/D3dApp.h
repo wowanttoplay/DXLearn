@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "BaseWindow.h"
 #include "GameTimer.h"
+#include "MathHelper.h"
 
 class D3dApp : public BaseWindow
 {
@@ -9,14 +10,14 @@ public:
 
 public:
     virtual bool Initialize() override;
-    virtual int Run() override;
-    virtual void Update(const GameTimer& InGameTime) = 0;
+    int Run() override;
+    virtual void Update(const GameTimer& InGameTime);
     virtual void Draw(const GameTimer& InGameTime) = 0;
     virtual LRESULT MSgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) override;
 
-    virtual void OnMouseDown(WPARAM btnState, int x, int y){ }
-    virtual void OnMouseUp(WPARAM btnState, int x, int y)  { }
-    virtual void OnMouseMove(WPARAM btnState, int x, int y){ }
+    virtual void OnMouseDown(WPARAM btnState, int x, int y);
+    virtual void OnMouseUp(WPARAM btnState, int x, int y);  
+    virtual void OnMouseMove(WPARAM btnState, int x, int y);
 
 public:
     float GetAspectRatio() const;
@@ -91,5 +92,15 @@ protected:
     bool mMaximized; // is the application maximized?
     bool mResizing = false; // are the resize bars being dragged
     bool mFullScreenState = false; // full screen enabled
-    
+
+protected:
+    DirectX::XMFLOAT4X4 mWorld = MathHelper::Identity4x4();
+    DirectX::XMFLOAT4X4 mView = MathHelper::Identity4x4();
+    DirectX::XMFLOAT4X4 mProj = MathHelper::Identity4x4();
+
+    float mTheta = 1.5f * DirectX::XM_PI;
+    float mPhi = DirectX::XM_PIDIV4;
+    float mRadius = 5.0f;
+
+    POINT mLastMousePos;
 };
