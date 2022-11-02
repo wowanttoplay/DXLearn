@@ -50,7 +50,7 @@ void BoxApp::Update(const GameTimer& InGameTime)
     XMMATRIX worldViewProj = world * view * proj;
 
     ObjectConstants objConstants;
-    XMStoreFloat4x4(&objConstants.WorldViewProj, worldViewProj);
+    XMStoreFloat4x4(&objConstants.WorldViewProj, XMMatrixTranspose(worldViewProj));
     mConstantBuffer->CopyData(0, objConstants);
 }
 
@@ -69,8 +69,8 @@ void BoxApp::Draw(const GameTimer& InGameTime)
                                       D3D12_RESOURCE_STATE_RENDER_TARGET));
 
     // Clear the depth and stencil
-    mCommandList->ClearRenderTargetView(RenderTargetView(), Colors::Brown, 0, nullptr);
-    mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1, 0, 0, nullptr);
+    mCommandList->ClearRenderTargetView(RenderTargetView(), Colors::SkyBlue, 0, nullptr);
+    mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
     // set render target and depth stencil
     mCommandList->OMSetRenderTargets(1, &RenderTargetView(), true, &DepthStencilView());
@@ -83,7 +83,7 @@ void BoxApp::Draw(const GameTimer& InGameTime)
     // set vertex and index data
     mCommandList->IASetVertexBuffers(0, 1, &mBoxGeo->VertexBufferView());
     mCommandList->IASetIndexBuffer(&mBoxGeo->IndexBufferView());
-    mCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+    mCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     
     // set descriptor pointer
     mCommandList->SetGraphicsRootDescriptorTable(0, mCbvHeap->GetGPUDescriptorHandleForHeapStart());
@@ -275,7 +275,7 @@ void BoxApp::BuildPSO()
     psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
     psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
     psoDesc.SampleMask = UINT_MAX;
-    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
     psoDesc.NumRenderTargets = 1;
     psoDesc.RTVFormats[0] = mBackBufferFormat;
     psoDesc.SampleDesc.Count = mMsaaState ? 4 : 1;
