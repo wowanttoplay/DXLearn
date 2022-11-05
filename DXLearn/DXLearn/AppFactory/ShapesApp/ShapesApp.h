@@ -15,9 +15,11 @@ protected:
 private:
     void BuildRootSignature();
     void BuildShadersAndInputLayout();
+    void BuildMeshGeometry();
 
 private:
     Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSig;
     std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3DBlob>> mShaders;
-    Microsoft::WRL::ComPtr<D3D12_INPUT_LAYOUT_DESC> mInputLayout;
+    std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
+    std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> mMeshGeometry;
 };
