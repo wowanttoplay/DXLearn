@@ -3,7 +3,7 @@
 #include "../../Common/MathHelper.h"
 #include "../../Common/UploadBuffer.h"
 
-struct ObjectConstants
+struct BoxObjectConstants
 {
     DirectX::XMFLOAT4X4 WorldViewProj = MathHelper::Identity4x4();
 };
@@ -37,7 +37,7 @@ private:
 private:
     std::unique_ptr<MeshGeometry> mBoxGeo;
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mCbvHeap = nullptr;
-    std::unique_ptr<UploadBuffer<ObjectConstants>> mConstantBuffer = nullptr;
+    std::unique_ptr<UploadBuffer<BoxObjectConstants>> mConstantBuffer = nullptr;
 
     Microsoft::WRL::ComPtr<ID3DBlob> mVsByteCode = nullptr;
     Microsoft::WRL::ComPtr<ID3DBlob> mPsByteCode = nullptr;
