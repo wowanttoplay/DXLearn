@@ -2,9 +2,12 @@
 
 #include <DirectXColors.h>
 
+#include "RenderItem.h"
 #include "ShapesFrameResource.h"
 #include "../../Common/d3dx12.h"
 #include "../../Common/GeometryGenerator.h"
+
+const std::string GeoName = "shapeGeo";
 
 bool ShapesApp::Initialize()
 {
@@ -17,6 +20,7 @@ bool ShapesApp::Initialize()
     BuildRootSignature();
     BuildShadersAndInputLayout();
     BuildMeshGeometry();
+    BuildRenderItems();
     
     
 
@@ -153,7 +157,7 @@ void ShapesApp::BuildMeshGeometry()
     const UINT ibByteSize = sizeof(uint16_t) * static_cast<UINT>(TotaleIndices.size());
 
     auto geo = std::make_unique<MeshGeometry>();
-    geo->Name = "shapeGeo";
+    geo->Name = GeoName;
 
     ThrowIfFailed(D3DCreateBlob(vbBytesSize, &geo->VertexBufferCPU));
     CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), TotalVertices.data(), vbBytesSize);
@@ -174,4 +178,86 @@ void ShapesApp::BuildMeshGeometry()
     geo->DrawArgs["cylinder"] = cylinderSubMesh;
 
     mMeshGeometry[geo->Name] = std::move(geo);
+}
+
+void ShapesApp::BuildRenderItems()
+{
+    // box render item
+    auto boxItem = std::make_unique<RenderItem>();
+    DirectX::XMStoreFloat4x4(&boxItem->World, DirectX::XMMatrixScaling(2.0, 2.0, 2.0) * DirectX::XMMatrixTranslation(0.0f, 0.5f, 0.0f));
+    boxItem->objectIndex = 0;
+    boxItem->Geo = mMeshGeometry[GeoName].get();
+    boxItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    boxItem->IndexCount = boxItem->Geo->DrawArgs["box"].IndexCount;
+    boxItem->BaseVertexLcoation = boxItem->Geo->DrawArgs["box"].BaseVertexLocation;
+    boxItem->StartIndexLocation = boxItem->Geo->DrawArgs["box"].StartIndexLocation;
+    mAllRenderItems.push_back(std::move(boxItem));
+
+    // grid render item
+    auto gridItem = std::make_unique<RenderItem>();
+    gridItem->World = MathHelper::Identity4x4();
+    gridItem->objectIndex = 1;
+    gridItem->Geo = mMeshGeometry[GeoName].get();
+    gridItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    gridItem->IndexCount = gridItem->Geo->DrawArgs["grid"].IndexCount;
+    gridItem->BaseVertexLcoation = gridItem->Geo->DrawArgs["grid"].BaseVertexLocation;
+    gridItem->StartIndexLocation = gridItem->Geo->DrawArgs["grid"].StartIndexLocation;
+    mAllRenderItems.push_back(std::move(gridItem));
+
+    UINT objectIndex = 2;
+    for (int index = 0; index < 5; ++index)
+    {
+        auto leftCylinderRnderItem = std::make_unique<RenderItem>();
+        auto leftSphereRenderItem = std::make_unique<RenderItem>();
+        auto rightCylinderRenderItem = std::make_unique<RenderItem>();
+        auto rightSphereRenderItem = std::make_unique<RenderItem>();
+
+        DirectX::XMMATRIX leftCylinderWorld = DirectX::XMMatrixTranslation(-5.0f, 1.5f, -10.0f + index * 5.0f);
+        DirectX::XMMATRIX rightCylinderWorld = DirectX::XMMatrixTranslation(5.0f, 1.5f, -10.0f + index * 5.0f);
+        DirectX::XMMATRIX leftSphereWorld = DirectX::XMMatrixTranslation(-5.0f, 3.5f, -10.0f + index * 5.0f);
+        DirectX::XMMATRIX rightSphereWorld = DirectX::XMMatrixTranslation(5.0f, 3.5f, -10.0f + index * 5.0f);
+
+        DirectX::XMStoreFloat4x4(&leftCylinderRnderItem->World, leftCylinderWorld);
+        leftCylinderRnderItem->objectIndex = objectIndex++;
+        leftCylinderRnderItem->Geo = mMeshGeometry[GeoName].get();
+        leftCylinderRnderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+        leftCylinderRnderItem->IndexCount = leftCylinderRnderItem->Geo->DrawArgs["cylinder"].IndexCount;
+        leftCylinderRnderItem->BaseVertexLcoation = leftCylinderRnderItem->Geo->DrawArgs["cylinder"].BaseVertexLocation;
+        leftCylinderRnderItem->StartIndexLocation = leftCylinderRnderItem->Geo->DrawArgs["cylinder"].StartIndexLocation;
+        mAllRenderItems.push_back(std::move(leftCylinderRnderItem));
+
+        DirectX::XMStoreFloat4x4(&rightCylinderRenderItem->World, rightCylinderWorld);
+        rightCylinderRenderItem->objectIndex = objectIndex++;
+        rightCylinderRenderItem->Geo = mMeshGeometry[GeoName].get();
+        rightCylinderRenderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+        rightCylinderRenderItem->IndexCount = rightCylinderRenderItem->Geo->DrawArgs["cylinder"].IndexCount;
+        rightCylinderRenderItem->BaseVertexLcoation = rightCylinderRenderItem->Geo->DrawArgs["cylinder"].BaseVertexLocation;
+        rightCylinderRenderItem->StartIndexLocation = rightCylinderRenderItem->Geo->DrawArgs["cylinder"].StartIndexLocation;
+        mAllRenderItems.push_back(std::move(rightCylinderRenderItem));
+
+        DirectX::XMStoreFloat4x4(&leftSphereRenderItem->World, leftSphereWorld);
+        leftSphereRenderItem->objectIndex = objectIndex++;
+        leftSphereRenderItem->Geo = mMeshGeometry[GeoName].get();
+        leftSphereRenderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+        leftSphereRenderItem->IndexCount = leftSphereRenderItem->Geo->DrawArgs["sphere"].IndexCount;
+        leftSphereRenderItem->BaseVertexLcoation = leftSphereRenderItem->Geo->DrawArgs["sphere"].BaseVertexLocation;
+        leftSphereRenderItem->StartIndexLocation = leftSphereRenderItem->Geo->DrawArgs["sphere"].StartIndexLocation;
+        mAllRenderItems.push_back(std::move(leftSphereRenderItem));
+
+        DirectX::XMStoreFloat4x4(&rightSphereRenderItem->World, rightSphereWorld);
+        rightSphereRenderItem->objectIndex = objectIndex++;
+        rightSphereRenderItem->Geo = mMeshGeometry[GeoName].get();
+        rightSphereRenderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+        rightSphereRenderItem->IndexCount = rightSphereRenderItem->Geo->DrawArgs["sphere"].IndexCount;
+        rightSphereRenderItem->BaseVertexLcoation = rightSphereRenderItem->Geo->DrawArgs["sphere"].BaseVertexLocation;
+        rightSphereRenderItem->StartIndexLocation = rightSphereRenderItem->Geo->DrawArgs["sphere"].StartIndexLocation;
+        mAllRenderItems.push_back(std::move(rightSphereRenderItem));
+    }
+
+    // All the render items are opaque
+    for (auto& e : mAllRenderItems)
+    {
+        mOpaqueRenderItems.push_back(e.get());
+    }
+    
 }
