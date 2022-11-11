@@ -11,6 +11,7 @@ public:
 public:
     virtual bool Initialize() override;
     int Run() override;
+    
     virtual void Update(const GameTimer& InGameTime);
     virtual void Draw(const GameTimer& InGameTime) = 0;
     virtual LRESULT MSgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) override;
@@ -21,7 +22,7 @@ public:
 
 public:
     float GetAspectRatio() const;
-
+    void UpdateCamera();
 
 protected:
     // Init direct 3d

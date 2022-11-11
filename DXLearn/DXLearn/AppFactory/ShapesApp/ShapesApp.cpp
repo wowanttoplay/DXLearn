@@ -24,10 +24,25 @@ bool ShapesApp::Initialize()
     BuildFrameResource();
     BuildDescriptorHeaps();
     BuildContantBufferViews();
-    
-    
+    BuildPSO();
 
+    ThrowIfFailed(mCommandList->Close());
+    ID3D12CommandList* cmdList[] = {mCommandList.Get()};
+    mCommandQueue->ExecuteCommandLists(_countof(cmdList), cmdList);
+
+    FlushCommandQueue();
+    
     return true;
+}
+
+void ShapesApp::Update(const GameTimer& InGameTime)
+{
+    D3dApp::Update(InGameTime);
+}
+
+void ShapesApp::Draw(const GameTimer& InGameTime)
+{
+    
 }
 
 void ShapesApp::BuildRootSignature()
@@ -287,7 +302,7 @@ void ShapesApp::BuildDescriptorHeaps()
     D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
     cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
     cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-    cbvHeapDesc.NodeMask = 0;
+    cbvHeapDesc.NodeMask = 0u;
     cbvHeapDesc.NumDescriptors = numDescriptors;
 
     ThrowIfFailed(mD3dDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&mDescriptorHeap)));
@@ -302,7 +317,7 @@ void ShapesApp::BuildContantBufferViews()
     for (int frameIndex = 0; frameIndex < gNumFrameResource; ++frameIndex)
     {
         auto objectCB = mFrameResources[frameIndex]->ObjectCb->GetResource();
-        for (int objIndex = 0; objIndex < objCount; ++objIndex)
+        for (UINT objIndex = 0; objIndex < objCount; ++objIndex)
         {
             D3D12_GPU_VIRTUAL_ADDRESS cbvAddress = objectCB->GetGPUVirtualAddress();
 
@@ -324,7 +339,7 @@ void ShapesApp::BuildContantBufferViews()
 
     UINT passCBByteSize = D3dUtil::CalculateConstantBufferByteSize(sizeof(ShapesPassContants));
     // Last three descriptor are the pass CBVs for each frame resource
-    for (int frameIndex = 0; frameIndex < gNumFrameResource; ++frameIndex)
+    for (UINT frameIndex = 0; frameIndex < gNumFrameResource; ++frameIndex)
     {
         auto passCB = mFrameResources[frameIndex]->PassCB->GetResource();
         D3D12_GPU_VIRTUAL_ADDRESS cbvAddress = passCB->GetGPUVirtualAddress();
@@ -339,5 +354,53 @@ void ShapesApp::BuildContantBufferViews()
         cbvDesc.SizeInBytes = passCBByteSize;
 
         mD3dDevice->CreateConstantBufferView(&cbvDesc, handle);
+    }
+}
+
+void ShapesApp::BuildPSO()
+{
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc;
+    opaquePsoDesc.InputLayout = {mInputLayout.data(), static_cast<UINT>(mInputLayout.size())};
+    opaquePsoDesc.pRootSignature = mRootSig.Get();
+    opaquePsoDesc.VS =
+    {
+        reinterpret_cast<byte*>(mShaders["standardVS"]->GetBufferPointer()),
+        mShaders["standardVS"]->GetBufferSize()
+    };
+
+    opaquePsoDesc.PS =
+    {
+        reinterpret_cast<byte*>(mShaders["opaquePS"]->GetBufferPointer()),
+        mShaders["opaquePS"]->GetBufferSize()
+    };
+
+    opaquePsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+    opaquePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+    opaquePsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+    opaquePsoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+    opaquePsoDesc.SampleMask = UINT_MAX;
+    opaquePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    opaquePsoDesc.NumRenderTargets = 1;
+    opaquePsoDesc.RTVFormats[0] = mBackBufferFormat;
+    opaquePsoDesc.SampleDesc.Count = mMsaaState ? 4 : 1;
+    opaquePsoDesc.SampleDesc.Quality = mMsaaState ? mMsaaQuality - 1 : 0;
+    opaquePsoDesc.DSVFormat = mDepthStencilFormat;
+    ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs["opaque"])));
+
+
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC opaqueWireframePsoDesc = opaquePsoDesc;
+    opaqueWireframePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+    ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&opaqueWireframePsoDesc, IID_PPV_ARGS(&mPSOs["opaque_wrieframe"])));
+}
+
+void ShapesApp::OnKeyboardInput(const GameTimer& InGameTime)
+{
+    if (GetAsyncKeyState('1') & 0x800)
+    {
+        mIsWireframe = true;
+    }
+    else
+    {
+        mIsWireframe  = false;
     }
 }

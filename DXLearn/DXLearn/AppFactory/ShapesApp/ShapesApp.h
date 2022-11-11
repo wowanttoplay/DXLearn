@@ -13,6 +13,9 @@ public:
 
 protected:
     virtual bool Initialize() override;
+private:
+    virtual void Update(const GameTimer& InGameTime) override;
+    virtual void Draw(const GameTimer& InGameTime) override;
 
 private:
     void BuildRootSignature();
@@ -22,6 +25,8 @@ private:
     void BuildFrameResource();
     void BuildDescriptorHeaps();
     void BuildContantBufferViews();
+    void BuildPSO();
+     
 
 private:
     Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSig;
@@ -36,4 +41,11 @@ private:
     
     UINT mPassCBVOffset = 0; // pass constant buffer view offset in descriptor heaps
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mDescriptorHeap;
+
+    std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D12PipelineState>> mPSOs;
+
+private:
+    void OnKeyboardInput(const GameTimer& InGameTime);
+private:
+    bool mIsWireframe = false;
 };

@@ -63,20 +63,10 @@ int D3dApp::Run()
     return static_cast<int>(msg.wParam);
 }
 
+
 void D3dApp::Update(const GameTimer& InGameTime)
 {
-    // Convert Spherical to Cartesian coordinates.
-    float x = mRadius*sinf(mPhi)*cosf(mTheta);
-    float z = mRadius*sinf(mPhi)*sinf(mTheta);
-    float y = mRadius*cosf(mPhi);
-
-    // Build the view matrix.
-    XMVECTOR pos = XMVectorSet(x, y, z, 1.0f);
-    XMVECTOR target = XMVectorZero();
-    XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-
-    XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
-    XMStoreFloat4x4(&mView, view);
+    UpdateCamera();
 }
 
 LRESULT D3dApp::MSgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -239,6 +229,22 @@ void D3dApp::OnMouseMove(WPARAM btnState, int x, int y)
 float D3dApp::GetAspectRatio() const
 {
     return static_cast<float>(mClinetWidth) / mClinetHeight;
+}
+
+void D3dApp::UpdateCamera()
+{
+    // Convert Spherical to Cartesian coordinates.
+    float x = mRadius*sinf(mPhi)*cosf(mTheta);
+    float z = mRadius*sinf(mPhi)*sinf(mTheta);
+    float y = mRadius*cosf(mPhi);
+
+    // Build the view matrix.
+    XMVECTOR pos = XMVectorSet(x, y, z, 1.0f);
+    XMVECTOR target = XMVectorZero();
+    XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+    XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
+    XMStoreFloat4x4(&mView, view);
 }
 
 bool D3dApp::InitDirect3D()
