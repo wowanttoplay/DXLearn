@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "RenderItem.h"
+#include "ShapesFrameResource.h"
 #include "../../Common/D3dApp.h"
 
 class ShapesApp : public D3dApp
@@ -18,6 +19,7 @@ private:
     void BuildShadersAndInputLayout();
     void BuildMeshGeometry();
     void BuildRenderItems();
+    void BuildFrameResource();
 
 private:
     Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSig;
@@ -28,4 +30,5 @@ private:
     // List of all the render item
     std::vector<std::unique_ptr<RenderItem>> mAllRenderItems;
     std::vector<RenderItem*> mOpaqueRenderItems;
+    std::vector<std::unique_ptr<ShapesFrameResource>> mFrameResources;
 };

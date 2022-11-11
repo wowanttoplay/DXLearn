@@ -21,6 +21,7 @@ bool ShapesApp::Initialize()
     BuildShadersAndInputLayout();
     BuildMeshGeometry();
     BuildRenderItems();
+    BuildFrameResource();
     
     
 
@@ -260,4 +261,13 @@ void ShapesApp::BuildRenderItems()
         mOpaqueRenderItems.push_back(e.get());
     }
     
+}
+
+void ShapesApp::BuildFrameResource()
+{
+    for (size_t index = 0; index < gNumFrameResource; ++index)
+    {
+        mFrameResources.emplace_back(std::move(
+            std::make_unique<ShapesFrameResource>(mD3dDevice.Get(), 1, static_cast<UINT>(mAllRenderItems.size()))));
+    }
 }
