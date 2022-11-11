@@ -6,7 +6,7 @@ struct shapesObjectConstants
     DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
 };
 
-struct PassContants
+struct ShapesPassContants
 {
     DirectX::XMFLOAT4X4 View = MathHelper::Identity4x4();
     DirectX::XMFLOAT4X4 InvView = MathHelper::Identity4x4();
@@ -36,6 +36,6 @@ public:
 
     // We can't update constant buffer until the gpu is done processing the commands that reference it
     // so each frame needs their own cbuffers
-    std::unique_ptr<UploadBuffer<PassContants>> PassCB = nullptr;
+    std::unique_ptr<UploadBuffer<ShapesPassContants>> PassCB = nullptr;
     std::unique_ptr<UploadBuffer<shapesObjectConstants>> ObjectCb = nullptr;
 };

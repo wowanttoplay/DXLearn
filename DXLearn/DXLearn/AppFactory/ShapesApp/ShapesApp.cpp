@@ -23,6 +23,7 @@ bool ShapesApp::Initialize()
     BuildRenderItems();
     BuildFrameResource();
     BuildDescriptorHeaps();
+    BuildContantBufferViews();
     
     
 
@@ -300,6 +301,43 @@ void ShapesApp::BuildContantBufferViews()
     // Need a CBV descriptor fro each object fro each frame resource
     for (int frameIndex = 0; frameIndex < gNumFrameResource; ++frameIndex)
     {
-        
+        auto objectCB = mFrameResources[frameIndex]->ObjectCb->GetResource();
+        for (int objIndex = 0; objIndex < objCount; ++objIndex)
+        {
+            D3D12_GPU_VIRTUAL_ADDRESS cbvAddress = objectCB->GetGPUVirtualAddress();
+
+            // Offset the gpu address in buffer
+            cbvAddress += objIndex * objCBByteSize;
+
+            // Offset to the object cbv in the descriptor heap
+            int heapIndex = frameIndex * objCount + objIndex;
+            auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+            handle.Offset(heapIndex, mCbvHandleSize);
+
+            D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
+            cbvDesc.BufferLocation = cbvAddress;
+            cbvDesc.SizeInBytes = objCBByteSize;
+
+            mD3dDevice->CreateConstantBufferView(&cbvDesc, handle);
+        }
+    }
+
+    UINT passCBByteSize = D3dUtil::CalculateConstantBufferByteSize(sizeof(ShapesPassContants));
+    // Last three descriptor are the pass CBVs for each frame resource
+    for (int frameIndex = 0; frameIndex < gNumFrameResource; ++frameIndex)
+    {
+        auto passCB = mFrameResources[frameIndex]->PassCB->GetResource();
+        D3D12_GPU_VIRTUAL_ADDRESS cbvAddress = passCB->GetGPUVirtualAddress();
+
+        // Offset to the pass cbv in the descriptor heap
+        int heapIndex = mPassCBVOffset + frameIndex;
+        auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+        handle.Offset(heapIndex, mCbvHandleSize);
+
+        D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
+        cbvDesc.BufferLocation = cbvAddress;
+        cbvDesc.SizeInBytes = passCBByteSize;
+
+        mD3dDevice->CreateConstantBufferView(&cbvDesc, handle);
     }
 }
