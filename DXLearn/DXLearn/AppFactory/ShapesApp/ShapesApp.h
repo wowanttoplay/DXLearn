@@ -20,6 +20,8 @@ private:
     void BuildMeshGeometry();
     void BuildRenderItems();
     void BuildFrameResource();
+    void BuildDescriptorHeaps();
+    void BuildContantBufferViews();
 
 private:
     Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSig;
@@ -31,4 +33,7 @@ private:
     std::vector<std::unique_ptr<RenderItem>> mAllRenderItems;
     std::vector<RenderItem*> mOpaqueRenderItems;
     std::vector<std::unique_ptr<ShapesFrameResource>> mFrameResources;
+    
+    UINT mPassCBVOffset = 0; // pass constant buffer view offset in descriptor heaps
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mDescriptorHeap;
 };

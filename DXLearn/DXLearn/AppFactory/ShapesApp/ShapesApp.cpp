@@ -22,6 +22,7 @@ bool ShapesApp::Initialize()
     BuildMeshGeometry();
     BuildRenderItems();
     BuildFrameResource();
+    BuildDescriptorHeaps();
     
     
 
@@ -269,5 +270,36 @@ void ShapesApp::BuildFrameResource()
     {
         mFrameResources.emplace_back(std::move(
             std::make_unique<ShapesFrameResource>(mD3dDevice.Get(), 1, static_cast<UINT>(mAllRenderItems.size()))));
+    }
+}
+
+void ShapesApp::BuildDescriptorHeaps()
+{
+    UINT objCount = static_cast<UINT>(mOpaqueRenderItems.size());
+    // Need a constant buffer view descriptor for each frame resource,
+    // +1 for the perpass for each fraeme resource
+    UINT numDescriptors = (objCount + 1)  * gNumFrameResource;
+
+    // Save an offset to the start of the pass CBVs. There are the last 3 descriptors
+    mPassCBVOffset = objCount * gNumFrameResource;
+
+    D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
+    cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+    cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+    cbvHeapDesc.NodeMask = 0;
+    cbvHeapDesc.NumDescriptors = numDescriptors;
+
+    ThrowIfFailed(mD3dDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&mDescriptorHeap)));
+}
+
+void ShapesApp::BuildContantBufferViews()
+{
+    UINT objCBByteSize = D3dUtil::CalculateConstantBufferByteSize(sizeof(shapesObjectConstants));
+    UINT objCount = static_cast<UINT>(mAllRenderItems.size());
+
+    // Need a CBV descriptor fro each object fro each frame resource
+    for (int frameIndex = 0; frameIndex < gNumFrameResource; ++frameIndex)
+    {
+        
     }
 }
