@@ -38,6 +38,8 @@ private:
     std::vector<std::unique_ptr<RenderItem>> mAllRenderItems;
     std::vector<RenderItem*> mOpaqueRenderItems;
     std::vector<std::unique_ptr<ShapesFrameResource>> mFrameResources;
+    int mCurrentFrameResourceIndex = 0;
+    ShapesFrameResource* mCurrentFrameResource = nullptr;
     
     UINT mPassCBVOffset = 0; // pass constant buffer view offset in descriptor heaps
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mDescriptorHeap;
@@ -46,6 +48,9 @@ private:
 
 private:
     void OnKeyboardInput(const GameTimer& InGameTime);
+    void UpdateObjectCBs(const GameTimer& InGameTime);
+    void UpdateMainPassCB(const GameTimer& InGamTime);
 private:
     bool mIsWireframe = false;
+    ShapesPassContants mMainPassCB;
 };

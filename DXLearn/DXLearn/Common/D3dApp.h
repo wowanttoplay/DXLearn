@@ -95,9 +95,13 @@ protected:
     bool mFullScreenState = false; // full screen enabled
 
 protected:
+    DirectX::XMFLOAT3 mEyePso = {0.0f, 0.0f, 0.0f};
     DirectX::XMFLOAT4X4 mWorld = MathHelper::Identity4x4();
     DirectX::XMFLOAT4X4 mView = MathHelper::Identity4x4();
     DirectX::XMFLOAT4X4 mProj = MathHelper::Identity4x4();
+
+    float mNearZ = 1.0f;
+    float mFarZ = 1000.0f;
 
     float mTheta = 1.5f * DirectX::XM_PI;
     float mPhi = DirectX::XM_PIDIV4;

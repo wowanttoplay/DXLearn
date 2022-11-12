@@ -37,7 +37,24 @@ bool ShapesApp::Initialize()
 
 void ShapesApp::Update(const GameTimer& InGameTime)
 {
+    OnKeyboardInput(InGameTime);
     D3dApp::Update(InGameTime);
+
+    mCurrentFrameResourceIndex = (mCurrentFrameResourceIndex + 1) % gNumFrameResource;
+    mCurrentFrameResource = mFrameResources[mCurrentFrameResourceIndex].get();
+
+    // Has the GPu finished processing the commands of the current frame resource ?
+    // If not , wait until the GPU has completed commmands up to this fence point
+    if (mCurrentFrameResource->Fence != 0 && mFence->GetCompletedValue() < mCurrentFrameResource->Fence)
+    {
+        HANDLE eventHandle = CreateEventEx(nullptr, false, false, EVENT_ALL_ACCESS);
+        ThrowIfFailed(mFence->SetEventOnCompletion(mCurrentFrameResource->Fence, eventHandle));
+        WaitForSingleObject(eventHandle, INFINITE);
+        CloseHandle(eventHandle);
+    }
+
+    UpdateObjectCBs(InGameTime);
+    UpdateMainPassCB(InGameTime);
 }
 
 void ShapesApp::Draw(const GameTimer& InGameTime)
@@ -403,4 +420,51 @@ void ShapesApp::OnKeyboardInput(const GameTimer& InGameTime)
     {
         mIsWireframe  = false;
     }
+}
+
+void ShapesApp::UpdateObjectCBs(const GameTimer& IngameTime)
+{
+    auto objCBBuffer = mCurrentFrameResource->ObjectCb.get();
+    for (auto& e : mAllRenderItems)
+    {
+        if (e->NumFrameDirty > 0)
+        {
+            DirectX::XMMATRIX world = DirectX::XMLoadFloat4x4(&e->World);
+
+            shapesObjectConstants objConstant;
+            DirectX::XMStoreFloat4x4(&objConstant.World, DirectX::XMMatrixTranspose(world));
+
+            objCBBuffer->CopyData(e->objectIndex, objConstant);
+
+            e->NumFrameDirty--;
+        }
+    }
+}
+
+void ShapesApp::UpdateMainPassCB(const GameTimer& InGamTime)
+{
+    DirectX::XMMATRIX view = DirectX::XMLoadFloat4x4(&mView);
+    DirectX::XMMATRIX proj = DirectX::XMLoadFloat4x4(&mProj);
+
+    DirectX::XMMATRIX viewPorj = DirectX::XMMatrixMultiply(view, proj);
+    DirectX::XMMATRIX invView = DirectX::XMMatrixInverse(&DirectX::XMMatrixDeterminant(view), view);
+    DirectX::XMMATRIX invProj = DirectX::XMMatrixInverse(&DirectX::XMMatrixDeterminant(proj), proj);
+    DirectX::XMMATRIX invViewPorj = DirectX::XMMatrixInverse(&DirectX::XMMatrixDeterminant(viewPorj), viewPorj);
+
+    DirectX::XMStoreFloat4x4(&mMainPassCB.View, DirectX::XMMatrixTranspose(view));
+    DirectX::XMStoreFloat4x4(&mMainPassCB.Proj, DirectX::XMMatrixTranspose(proj));
+    DirectX::XMStoreFloat4x4(&mMainPassCB.InvProj, DirectX::XMMatrixTranspose(invProj));
+    DirectX::XMStoreFloat4x4(&mMainPassCB.InvView, DirectX::XMMatrixTranspose(invView));
+    DirectX::XMStoreFloat4x4(&mMainPassCB.ViewPorj, DirectX::XMMatrixTranspose(viewPorj));
+    DirectX::XMStoreFloat4x4(&mMainPassCB.InvViewProj, DirectX::XMMatrixTranspose(invViewPorj));
+    mMainPassCB.EyePosW = mEyePso;
+    mMainPassCB.RenderTargetSize = DirectX::XMFLOAT2(static_cast<float>(mClinetWidth), static_cast<float>(mClinetHeight));
+    mMainPassCB.InvRenderTargetSize = DirectX::XMFLOAT2(1.0f / mClinetWidth, 1.0f / mClinetHeight);
+    mMainPassCB.NearZ = mNearZ;
+    mMainPassCB.FarZ = mFarZ;
+    mMainPassCB.TotalTime = InGamTime.TotalTime();
+    mMainPassCB.DeltaTime = InGamTime.DeltaTime();
+
+    auto currPassCB = mCurrentFrameResource->PassCB.get();
+    currPassCB->CopyData(0, mMainPassCB);
 }

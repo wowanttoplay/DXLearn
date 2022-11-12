@@ -234,12 +234,12 @@ float D3dApp::GetAspectRatio() const
 void D3dApp::UpdateCamera()
 {
     // Convert Spherical to Cartesian coordinates.
-    float x = mRadius*sinf(mPhi)*cosf(mTheta);
-    float z = mRadius*sinf(mPhi)*sinf(mTheta);
-    float y = mRadius*cosf(mPhi);
+    mEyePso.x = mRadius*sinf(mPhi)*cosf(mTheta);
+    mEyePso.z = mRadius*sinf(mPhi)*sinf(mTheta);
+    mEyePso.y = mRadius*cosf(mPhi);
 
     // Build the view matrix.
-    XMVECTOR pos = XMVectorSet(x, y, z, 1.0f);
+    XMVECTOR pos = XMVectorSet(mEyePso.x, mEyePso.y, mEyePso.z, 1.0f);
     XMVECTOR target = XMVectorZero();
     XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
