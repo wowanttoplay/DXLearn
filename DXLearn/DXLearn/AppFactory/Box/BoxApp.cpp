@@ -49,7 +49,7 @@ void BoxApp::Update(const GameTimer& InGameTime)
 
     XMMATRIX worldViewProj = world * view * proj;
 
-    ObjectConstants objConstants;
+    BoxObjectConstants objConstants;
     XMStoreFloat4x4(&objConstants.WorldViewProj, XMMatrixTranspose(worldViewProj));
     mConstantBuffer->CopyData(0, objConstants);
 }
@@ -198,7 +198,7 @@ void BoxApp::BuildConstantBufferViewHeap()
 
 void BoxApp::BuildConstantBuffersAndView()
 {
-    mConstantBuffer = std::make_unique<UploadBuffer<ObjectConstants>>(mD3dDevice.Get(), 1, true);
+    mConstantBuffer = std::make_unique<UploadBuffer<BoxObjectConstants>>(mD3dDevice.Get(), 1, true);
 
     D3D12_GPU_VIRTUAL_ADDRESS cbAddress = mConstantBuffer->GetResource()->GetGPUVirtualAddress();
     UINT boxConstantIndex = 0;
