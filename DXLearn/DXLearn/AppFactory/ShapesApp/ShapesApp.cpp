@@ -62,7 +62,7 @@ void ShapesApp::Draw(const GameTimer& InGameTime)
     auto cmdAlloc = mCurrentFrameResource->CmdListAlloc;
     ThrowIfFailed(cmdAlloc->Reset());
 
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> currentPiplineState = mIsWireframe ? mPSOs["opaque_wireframe"] : mPSOs["opaque"];
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> currentPiplineState = mIsWireframe ? mPSOs["opaque_wrieframe"] : mPSOs["opaque"];
     ThrowIfFailed(mCommandList->Reset(cmdAlloc.Get(), currentPiplineState.Get()));
 
     mCommandList->RSSetViewports(1, &mViewport);
@@ -451,7 +451,7 @@ void ShapesApp::BuildPSO()
 
 void ShapesApp::OnKeyboardInput(const GameTimer& InGameTime)
 {
-    if (GetAsyncKeyState('1') & 0x800)
+    if (GetAsyncKeyState('1') & 0x8000)
     {
         mIsWireframe = true;
     }
