@@ -11,7 +11,7 @@ public:
     {
     }
 
-protected:
+public:
     virtual bool Initialize() override;
 private:
     virtual void Update(const GameTimer& InGameTime) override;
@@ -50,7 +50,11 @@ private:
     void OnKeyboardInput(const GameTimer& InGameTime);
     void UpdateObjectCBs(const GameTimer& InGameTime);
     void UpdateMainPassCB(const GameTimer& InGamTime);
+    void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& renderItems);
 private:
     bool mIsWireframe = false;
     ShapesPassContants mMainPassCB;
 };
+
+
+

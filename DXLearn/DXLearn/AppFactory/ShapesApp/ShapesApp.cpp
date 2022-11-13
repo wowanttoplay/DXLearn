@@ -59,7 +59,43 @@ void ShapesApp::Update(const GameTimer& InGameTime)
 
 void ShapesApp::Draw(const GameTimer& InGameTime)
 {
+    auto cmdAlloc = mCurrentFrameResource->CmdListAlloc;
+    ThrowIfFailed(cmdAlloc->Reset());
+
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> currentPiplineState = mIsWireframe ? mPSOs["opaque_wireframe"] : mPSOs["opaque"];
+    ThrowIfFailed(mCommandList->Reset(cmdAlloc.Get(), currentPiplineState.Get()));
+
+    mCommandList->RSSetViewports(1, &mViewport);
+    mCommandList->RSSetScissorRects(1, &mScissorRect);
+
+    mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentRenderTargetBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+    mCommandList->ClearRenderTargetView(RenderTargetView(), DirectX::Colors::Aqua, 0, nullptr);
+    mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+    mCommandList->OMSetRenderTargets(1, &RenderTargetView(), true, &DepthStencilView());
+
+    ID3D12DescriptorHeap* dsvHeaps[] = {mDescriptorHeap.Get()};
+    mCommandList->SetDescriptorHeaps(_countof(dsvHeaps), dsvHeaps);
+    mCommandList->SetGraphicsRootSignature(mRootSig.Get());
+
+
+    // set pass constant pointer
+    UINT passCBVIndex = mPassCBVOffset + mCurrentFrameResourceIndex;
+    auto passCBVHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+    passCBVHandle.Offset(passCBVIndex, mCbvHandleSize);
+    mCommandList->SetGraphicsRootDescriptorTable(1, passCBVHandle);
+    // draw render items
+    DrawRenderItems(mCommandList.Get(), mOpaqueRenderItems);
     
+    mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentRenderTargetBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+    ThrowIfFailed(mCommandList->Close());
+    ID3D12CommandList* cmdList[] = {mCommandList.Get()};
+    mCommandQueue->ExecuteCommandLists(_countof(cmdList), cmdList);
+
+    ThrowIfFailed(mSwapChain->Present(0,0));
+    mCurrentSwapChainIndex = (mCurrentSwapChainIndex + 1) % mSwapChainBufferNumber;
+
+    mCurrentFrameResource->Fence = ++mCurrentFence;
+    mCommandQueue->Signal(mFence.Get(), mCurrentFence);
 }
 
 void ShapesApp::BuildRootSignature()
@@ -317,7 +353,7 @@ void ShapesApp::BuildDescriptorHeaps()
     mPassCBVOffset = objCount * gNumFrameResource;
 
     D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
-    cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+    cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
     cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     cbvHeapDesc.NodeMask = 0u;
     cbvHeapDesc.NumDescriptors = numDescriptors;
@@ -377,20 +413,23 @@ void ShapesApp::BuildContantBufferViews()
 void ShapesApp::BuildPSO()
 {
     D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc;
-    opaquePsoDesc.InputLayout = {mInputLayout.data(), static_cast<UINT>(mInputLayout.size())};
+
+    //
+    // PSO for opaque objects.
+    //
+    ZeroMemory(&opaquePsoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+    opaquePsoDesc.InputLayout = { mInputLayout.data(), (UINT)mInputLayout.size() };
     opaquePsoDesc.pRootSignature = mRootSig.Get();
-    opaquePsoDesc.VS =
-    {
-        reinterpret_cast<byte*>(mShaders["standardVS"]->GetBufferPointer()),
+    opaquePsoDesc.VS = 
+    { 
+        reinterpret_cast<BYTE*>(mShaders["standardVS"]->GetBufferPointer()), 
         mShaders["standardVS"]->GetBufferSize()
     };
-
-    opaquePsoDesc.PS =
-    {
-        reinterpret_cast<byte*>(mShaders["opaquePS"]->GetBufferPointer()),
+    opaquePsoDesc.PS = 
+    { 
+        reinterpret_cast<BYTE*>(mShaders["opaquePS"]->GetBufferPointer()),
         mShaders["opaquePS"]->GetBufferSize()
     };
-
     opaquePsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
     opaquePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
     opaquePsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
@@ -400,7 +439,7 @@ void ShapesApp::BuildPSO()
     opaquePsoDesc.NumRenderTargets = 1;
     opaquePsoDesc.RTVFormats[0] = mBackBufferFormat;
     opaquePsoDesc.SampleDesc.Count = mMsaaState ? 4 : 1;
-    opaquePsoDesc.SampleDesc.Quality = mMsaaState ? mMsaaQuality - 1 : 0;
+    opaquePsoDesc.SampleDesc.Quality = mMsaaState ? (mMsaaQuality - 1) : 0;
     opaquePsoDesc.DSVFormat = mDepthStencilFormat;
     ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs["opaque"])));
 
@@ -467,4 +506,23 @@ void ShapesApp::UpdateMainPassCB(const GameTimer& InGamTime)
 
     auto currPassCB = mCurrentFrameResource->PassCB.get();
     currPassCB->CopyData(0, mMainPassCB);
+}
+
+void ShapesApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& renderItems)
+{
+    for (size_t index = 0; index < renderItems.size(); ++index)
+    {
+        auto renderItem = renderItems.at(index);
+        cmdList->IASetVertexBuffers(0, 1, &renderItem->Geo->VertexBufferView());
+        cmdList->IASetIndexBuffer(&renderItem->Geo->IndexBufferView());
+        cmdList->IASetPrimitiveTopology(renderItem->PrimitiveType);
+
+        UINT cbvIndex = mCurrentFrameResourceIndex * static_cast<UINT>(mOpaqueRenderItems.size()) + renderItem->objectIndex;
+        auto handle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+        handle.Offset(cbvIndex, mCbvHandleSize);
+
+        cmdList->SetGraphicsRootDescriptorTable(0, handle);
+
+        cmdList->DrawIndexedInstanced(renderItem->IndexCount, 1, renderItem->StartIndexLocation, renderItem->BaseVertexLcoation, 0);
+    }
 }
