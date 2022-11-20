@@ -9,6 +9,16 @@ public:
     virtual void Draw(const GameTimer& InGameTime) override;
     virtual void Update(const GameTimer& InGameTime) override;
 private:
-    
+    void BuildRootSignature();
+    void BuildShadersAndInputLayout();
+    void BuildLandGeometry();
+    void BuildRenderItem();
+    void BuildFrameResource();
+    void BuildDescriptor();
+    void BuildConstantBufferView();
+    void BuildPSO();
+
+private:
+    std::unique_ptr<MeshGeometry> mGeometries = nullptr;
     
 };
