@@ -2,7 +2,6 @@
 
 #include <DirectXColors.h>
 
-#include "RenderItem.h"
 #include "ShapesFrameResource.h"
 #include "../../Common/d3dx12.h"
 #include "../../Common/GeometryGenerator.h"

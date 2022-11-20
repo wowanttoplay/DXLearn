@@ -105,7 +105,7 @@ protected:
 
     float mTheta = 1.5f * DirectX::XM_PI;
     float mPhi = DirectX::XM_PIDIV4;
-    float mRadius = 5.0f;
+    float mRadius = 20.0f;
 
     POINT mLastMousePos;
 };

@@ -219,7 +219,7 @@ void D3dApp::OnMouseMove(WPARAM btnState, int x, int y)
         mRadius += dx - dy;
 
         // Restrict the radius.
-        mRadius = MathHelper::Clamp(mRadius, 3.0f, 15.0f);
+        mRadius = MathHelper::Clamp(mRadius, 5.0f, 30.0f);
     }
 
     mLastMousePos.x = x;
