@@ -35,5 +35,5 @@ public:
     // DrawIndexInsatnced parameter
     UINT IndexCount = 0;
     UINT StartIndexLocation = 0;
-    UINT BaseVertexLcoation = 0;
+    UINT BaseVertexLocation = 0;
 };

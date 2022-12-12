@@ -219,7 +219,33 @@ void LandAndWavesApp::BuildWaveGeomtry()
 
 void LandAndWavesApp::BuildRenderItem()
 {
+   // Wave
+   auto wavesRenderItem = std::make_unique<RenderItem>();
+   wavesRenderItem->World = MathHelper::Identity4x4();
+   wavesRenderItem->objectIndex = 0;
+   wavesRenderItem->Geo = mGeometries["waterGeo"].get();
+   wavesRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+   const auto& waveSubMesh = wavesRenderItem->Geo->DrawArgs["grid"];
+   wavesRenderItem->IndexCount = waveSubMesh.IndexCount;
+   wavesRenderItem->StartIndexLocation = waveSubMesh.StartIndexLocation;
+   wavesRenderItem->BaseVertexLocation = waveSubMesh.BaseVertexLocation;
+   mWaveRenderItem = wavesRenderItem.get();
+   mRitemLayer[static_cast<int>(RenderLayer::Opaque)].push_back(wavesRenderItem.get());
+
+   // Land
+   auto gridRitem = std::make_unique<RenderItem>();
+   gridRitem->World = MathHelper::Identity4x4();
+   gridRitem->objectIndex = 1;
+   gridRitem->Geo = mGeometries["landGeo"].get();
+   gridRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+   gridRitem->IndexCount = gridRitem->Geo->DrawArgs["grid"].IndexCount;
+   gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs["grid"].StartIndexLocation;
+   gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
+
+   mRitemLayer[(int)RenderLayer::Opaque].push_back(gridRitem.get());
    
+   mAllRenderItems.push_back(std::move(wavesRenderItem));
+   mAllRenderItems.push_back(std::move(gridRitem));
 }
 
 void LandAndWavesApp::BuildFrameResource()
