@@ -17,12 +17,18 @@ bool LandAndWavesApp::Initialize()
       return false;
    }
    ThrowIfFailed(mCommandList->Reset(mCommandAlloctor.Get(), nullptr));
+
+   mWaves = std::make_unique<Waves>(128, 128, 1.0f, 0.03f, 4.0f, 0.2f);
    
    BuildRootSignature();
    BuildShadersAndInputLayout();
+   
    BuildLandGeometry();
+   BuildWaveGeomtry();
    BuildRenderItem();
+   
    BuildFrameResource();
+   
    BuildPSO();
 
    ThrowIfFailed(mCommandList->Close());
@@ -44,10 +50,45 @@ void LandAndWavesApp::Update(const GameTimer& InGameTime)
 
 void LandAndWavesApp::BuildRootSignature()
 {
+   CD3DX12_ROOT_PARAMETER slotRootParameter[2];
+   // Create root constant buffer view
+   slotRootParameter[0].InitAsConstantBufferView(0);
+   slotRootParameter[1].InitAsConstantBufferView(1);
+   // A root signature is an array of root parameters.
+   CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(2, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+   // create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
+   Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
+   Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
+   HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,
+       serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
+
+   if(errorBlob != nullptr)
+   {
+      ::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
+   }
+   ThrowIfFailed(hr);
+
+   ThrowIfFailed(mD3dDevice->CreateRootSignature(
+      0,
+      serializedRootSig->GetBufferPointer(),
+      serializedRootSig->GetBufferSize(),
+      IID_PPV_ARGS(mRootSignature.GetAddressOf())
+   ));
 }
 
 void LandAndWavesApp::BuildShadersAndInputLayout()
 {
+   const std::wstring ShaderPath = TEXT("AppFactory\\ShapesApp\\Shaders\\color.hlsl");
+
+   mShaders["standardVS"] = D3dUtil::CompileShader(ShaderPath, nullptr, "VS", "vs_5_1");
+   mShaders["opaquePS"] = D3dUtil::CompileShader(ShaderPath, nullptr, "PS", "ps_5_1");
+
+   mInputLayout =
+   {
+      {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+      {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+  };
 }
 
 void LandAndWavesApp::BuildLandGeometry()
@@ -116,8 +157,14 @@ void LandAndWavesApp::BuildLandGeometry()
    LandSubMesh.BaseVertexLocation = 0;
    LandSubMesh.StartIndexLocation = 0;
 
-   geo->DrawArgs["Land"] = LandSubMesh;
-   mGeometries = std::move(geo);
+   geo->DrawArgs["grid"] = LandSubMesh;
+
+   mGeometries["landGeo"] = std::move(geo);
+}
+
+void LandAndWavesApp::BuildWaveGeomtry()
+{
+   
 }
 
 void LandAndWavesApp::BuildRenderItem()
@@ -125,14 +172,6 @@ void LandAndWavesApp::BuildRenderItem()
 }
 
 void LandAndWavesApp::BuildFrameResource()
-{
-}
-
-void LandAndWavesApp::BuildDescriptor()
-{
-}
-
-void LandAndWavesApp::BuildConstantBufferView()
 {
 }
 

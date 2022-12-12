@@ -398,6 +398,7 @@ void D3dApp::LogAdapters() const
 
         std::wstring info = TEXT("*** Adapter: ");
         info += desc.Description;
+        info += (TEXT("GPU Memory : ") +  to_wstring( desc.DedicatedVideoMemory / (1073741824.)));
         info += TEXT("\n");
 
         OutputDebugString(info.c_str());
