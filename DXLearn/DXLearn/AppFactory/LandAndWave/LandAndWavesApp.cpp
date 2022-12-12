@@ -164,11 +164,62 @@ void LandAndWavesApp::BuildLandGeometry()
 
 void LandAndWavesApp::BuildWaveGeomtry()
 {
-   
+   std::vector<uint16_t> indices(3 * mWaves->TriangleCount());
+   assert(mWaves->VertexCount() < 0x0000ffff);
+
+   int m = mWaves->RowCount();
+   int n = mWaves->ColumnCount();
+   int k = 0;
+   for(int i = 0; i < m - 1; ++i)
+   {
+      for(int j = 0; j < n - 1; ++j)
+      {
+         indices[k] = i*n + j;
+         indices[k + 1] = i*n + j + 1;
+         indices[k + 2] = (i + 1)*n + j;
+
+         indices[k + 3] = (i + 1)*n + j;
+         indices[k + 4] = i*n + j + 1;
+         indices[k + 5] = (i + 1)*n + j + 1;
+
+         k += 6; // next quad
+      }
+   }
+
+   UINT vbByteSize = mWaves->VertexCount()*sizeof(LWVertex);
+   UINT ibByteSize = (UINT)indices.size()*sizeof(std::uint16_t);
+
+   auto geo = std::make_unique<MeshGeometry>();
+   geo->Name = "waterGeo";
+
+   // Set dynamically.
+   geo->VertexBufferCPU = nullptr;
+   geo->VertexBufferGPU = nullptr;
+
+   ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+   CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+   geo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(mD3dDevice.Get(),
+      mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
+
+   geo->VertexByteStride = sizeof(LWVertex);
+   geo->VertexBufferByteSize = vbByteSize;
+   geo->IndexFormat = DXGI_FORMAT_R16_UINT;
+   geo->IndexBufferByteSize = ibByteSize;
+
+   SubMeshGeometry submesh;
+   submesh.IndexCount = (UINT)indices.size();
+   submesh.StartIndexLocation = 0;
+   submesh.BaseVertexLocation = 0;
+
+   geo->DrawArgs["grid"] = submesh;
+
+   mGeometries["waterGeo"] = std::move(geo);
 }
 
 void LandAndWavesApp::BuildRenderItem()
 {
+   
 }
 
 void LandAndWavesApp::BuildFrameResource()
