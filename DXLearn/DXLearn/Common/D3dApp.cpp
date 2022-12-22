@@ -90,8 +90,8 @@ LRESULT D3dApp::MSgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         return 0;
         // WM_SIZE is sent when the user resizes the window. 
     case WM_SIZE:
-        mClinetWidth = LOWORD(lParam);
-        mClinetHeight = HIWORD(lParam);
+        mClientWidth = LOWORD(lParam);
+        mClientHeight = HIWORD(lParam);
         if (mD3dDevice)
         {
             if (wParam == SIZE_MINIMIZED)
@@ -212,14 +212,14 @@ void D3dApp::OnMouseMove(WPARAM btnState, int x, int y)
     else if((btnState & MK_RBUTTON) != 0)
     {
         // Make each pixel correspond to 0.005 unit in the scene.
-        float dx = 0.005f*static_cast<float>(x - mLastMousePos.x);
-        float dy = 0.005f*static_cast<float>(y - mLastMousePos.y);
+        float dx = 0.05f*static_cast<float>(x - mLastMousePos.x);
+        float dy = 0.05f*static_cast<float>(y - mLastMousePos.y);
 
         // Update the camera radius based on input.
         mRadius += dx - dy;
 
         // Restrict the radius.
-        mRadius = MathHelper::Clamp(mRadius, 5.0f, 30.0f);
+        mRadius = MathHelper::Clamp(mRadius, 5.0f, 100.0f);
     }
 
     mLastMousePos.x = x;
@@ -228,18 +228,18 @@ void D3dApp::OnMouseMove(WPARAM btnState, int x, int y)
 
 float D3dApp::GetAspectRatio() const
 {
-    return static_cast<float>(mClinetWidth) / mClinetHeight;
+    return static_cast<float>(mClientWidth) / mClientHeight;
 }
 
 void D3dApp::UpdateCamera()
 {
     // Convert Spherical to Cartesian coordinates.
-    mEyePso.x = mRadius*sinf(mPhi)*cosf(mTheta);
-    mEyePso.z = mRadius*sinf(mPhi)*sinf(mTheta);
-    mEyePso.y = mRadius*cosf(mPhi);
+    mEyePostion.x = mRadius*sinf(mPhi)*cosf(mTheta);
+    mEyePostion.z = mRadius*sinf(mPhi)*sinf(mTheta);
+    mEyePostion.y = mRadius*cosf(mPhi);
 
     // Build the view matrix.
-    XMVECTOR pos = XMVectorSet(mEyePso.x, mEyePso.y, mEyePso.z, 1.0f);
+    XMVECTOR pos = XMVectorSet(mEyePostion.x, mEyePostion.y, mEyePostion.z, 1.0f);
     XMVECTOR target = XMVectorZero();
     XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
@@ -348,8 +348,8 @@ void D3dApp::CreateSwapChain()
     mSwapChain.Reset();
 
     DXGI_SWAP_CHAIN_DESC swapChainDesc;
-    swapChainDesc.BufferDesc.Width = mClinetWidth;
-    swapChainDesc.BufferDesc.Height = mClinetHeight;
+    swapChainDesc.BufferDesc.Width = mClientWidth;
+    swapChainDesc.BufferDesc.Height = mClientHeight;
     swapChainDesc.BufferDesc.RefreshRate.Numerator = 120;
     swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
     swapChainDesc.BufferDesc.Format = mBackBufferFormat;
@@ -465,7 +465,7 @@ void D3dApp::ResetSwapChain()
     mDepthStencilBuffer.Reset();
 
     // Resize the swap chain
-    ThrowIfFailed(mSwapChain->ResizeBuffers(mSwapChainBufferNumber, mClinetWidth, mClinetHeight, mBackBufferFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
+    ThrowIfFailed(mSwapChain->ResizeBuffers(mSwapChainBufferNumber, mClientWidth, mClientHeight, mBackBufferFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
     mCurrentSwapChainIndex = 0;
 }
 
@@ -487,8 +487,8 @@ void D3dApp::CreateDepthStencilBufferAndView()
     D3D12_RESOURCE_DESC depthStencilDesc;
     depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
     depthStencilDesc.Alignment = 0;
-    depthStencilDesc.Width = mClinetWidth;
-    depthStencilDesc.Height = mClinetHeight;
+    depthStencilDesc.Width = mClientWidth;
+    depthStencilDesc.Height = mClientHeight;
     depthStencilDesc.DepthOrArraySize = 1;
     depthStencilDesc.MipLevels = 1;
     depthStencilDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
@@ -553,12 +553,12 @@ void D3dApp::OnResize()
     // Update the viewport transform to cover the clinet area
     mViewport.TopLeftX = 0;
     mViewport.TopLeftY = 0;
-    mViewport.Width = static_cast<float>(mClinetWidth);
-    mViewport.Height = static_cast<float>(mClinetHeight);
+    mViewport.Width = static_cast<float>(mClientWidth);
+    mViewport.Height = static_cast<float>(mClientHeight);
     mViewport.MinDepth = 0.0f;
     mViewport.MaxDepth = 1.0f;
 
-    mScissorRect = {0, 0, mClinetWidth, mClinetHeight};
+    mScissorRect = {0, 0, mClientWidth, mClientHeight};
 
     XMMATRIX proj = XMMatrixPerspectiveFovLH(0.25f * MathHelper::Pi, GetAspectRatio(), 1.0f, 1000.0f);
     XMStoreFloat4x4(&mProj, proj);

@@ -5,6 +5,8 @@
 #include "LWFrameResource.h"
 #include "../../Common/GeometryGenerator.h"
 
+using namespace DirectX;
+
 float GetHillsHeight(float x, float z)
 {
    return 0.3f * (z * sinf(0.1f * x) + x * cosf(0.1f * z));
@@ -41,11 +43,67 @@ bool LandAndWavesApp::Initialize()
 
 void LandAndWavesApp::Draw(const GameTimer& InGameTime)
 {
+   auto cmdAlloc = mCurrFrameResource->CmdListAlloc;
+   ThrowIfFailed(cmdAlloc->Reset());
+
+   if (mIsWireframe)
+   {
+      ThrowIfFailed(mCommandList->Reset(cmdAlloc.Get(), mPSOs["opaque_wireframe"].Get()));
+   }
+   else
+   {
+      ThrowIfFailed(mCommandList->Reset(cmdAlloc.Get(), mPSOs["opaque"].Get()));
+   }
+
+   mCommandList->RSSetViewports(1, &mViewport);
+   mCommandList->RSSetScissorRects(1, &mScissorRect);
+
+   mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentRenderTargetBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+   mCommandList->ClearRenderTargetView(RenderTargetView(), DirectX::Colors::Aqua, 0, nullptr);
+   mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+   mCommandList->OMSetRenderTargets(1, &RenderTargetView(), true, &DepthStencilView());
+
+   mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
+
+   auto passCB = mCurrFrameResource->PassCB->GetResource();
+   mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
+
+   DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::Opaque]);
+
+   mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentRenderTargetBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+   ThrowIfFailed(mCommandList->Close());
+   ID3D12CommandList* cmdList[] = {mCommandList.Get()};
+   mCommandQueue->ExecuteCommandLists(_countof(cmdList), cmdList);
+
+   ThrowIfFailed(mSwapChain->Present(0,0));
+   mCurrentSwapChainIndex = (mCurrentSwapChainIndex + 1) % mSwapChainBufferNumber;
+
+   mCurrFrameResource->Fence = ++mCurrentFence;
+   mCommandQueue->Signal(mFence.Get(), mCurrentFence);
 }
 
 void LandAndWavesApp::Update(const GameTimer& InGameTime)
 {
    D3dApp::Update(InGameTime);
+
+   OnKeyboardInput(InGameTime);
+
+   mCurrFrameResourceIndex = (mCurrFrameResourceIndex + 1) % gNumFrameResource;
+   mCurrFrameResource = mFrameResources[mCurrFrameResourceIndex].get();
+
+   // Has the GPU finished processing the commands of the current frame resource?
+   // If not, wait until the GPU has completed commands up to this fence point.
+   if(mCurrFrameResource->Fence != 0 && mFence->GetCompletedValue() < mCurrFrameResource->Fence)
+   {
+      HANDLE eventHandle = CreateEventEx(nullptr, false, false, EVENT_ALL_ACCESS);
+      ThrowIfFailed(mFence->SetEventOnCompletion(mCurrFrameResource->Fence, eventHandle));
+      WaitForSingleObject(eventHandle, INFINITE);
+      CloseHandle(eventHandle);
+   }
+   UpdateObjectCBs(InGameTime);
+   UpdateMainPassCB(InGameTime);
+   UpdateWaves(InGameTime);
+   
 }
 
 void LandAndWavesApp::BuildRootSignature()
@@ -250,10 +308,167 @@ void LandAndWavesApp::BuildRenderItem()
 
 void LandAndWavesApp::BuildFrameResource()
 {
+   for (int i = 0; i < gNumFrameResource; ++i)
+   {
+      mFrameResources.push_back(std::make_unique<LWFrameResource>(mD3dDevice.Get(), 1, static_cast<UINT>(mAllRenderItems.size()), mWaves->VertexCount()));
+   }
 }
 
 void LandAndWavesApp::BuildPSO()
 {
+   D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc;
+
+   //
+   // PSO for opaque objects.
+   //
+   ZeroMemory(&opaquePsoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+   opaquePsoDesc.InputLayout = { mInputLayout.data(), (UINT)mInputLayout.size() };
+   opaquePsoDesc.pRootSignature = mRootSignature.Get();
+   opaquePsoDesc.VS =
+   {
+      reinterpret_cast<BYTE*>(mShaders["standardVS"]->GetBufferPointer()),
+      mShaders["standardVS"]->GetBufferSize()
+   };
+   opaquePsoDesc.PS =
+   {
+      reinterpret_cast<BYTE*>(mShaders["opaquePS"]->GetBufferPointer()),
+      mShaders["opaquePS"]->GetBufferSize()
+   };
+   opaquePsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+   opaquePsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+   opaquePsoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+   opaquePsoDesc.SampleMask = UINT_MAX;
+   opaquePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+   opaquePsoDesc.NumRenderTargets = 1;
+   opaquePsoDesc.RTVFormats[0] = mBackBufferFormat;
+   opaquePsoDesc.SampleDesc.Count = mMsaaState ? 4 : 1;
+   opaquePsoDesc.SampleDesc.Quality = mMsaaState ? (mMsaaQuality - 1) : 0;
+   opaquePsoDesc.DSVFormat = mDepthStencilFormat;
+   
+   ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs["opaque"])));
+
+   // PSO for opaque wireframe objects
+   D3D12_GRAPHICS_PIPELINE_STATE_DESC opaqueWireframePsoDesc = opaquePsoDesc;
+   opaqueWireframePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+   ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&opaqueWireframePsoDesc, IID_PPV_ARGS(&mPSOs["opaque_wireframe"])));
+}
+
+void LandAndWavesApp::OnKeyboardInput(const GameTimer& gt)
+{
+   if(GetAsyncKeyState('1') & 0x8000)
+      mIsWireframe = true;
+   else
+      mIsWireframe = false;
+}
+
+void LandAndWavesApp::UpdateObjectCBs(const GameTimer& game_timer)
+{
+   auto currObjectCB = mCurrFrameResource->ObjectCB.get();
+   for(auto& e : mAllRenderItems)
+   {
+      // Only update the cbuffer data if the constants have changed.  
+      // This needs to be tracked per frame resource.
+      if(e->NumFrameDirty > 0)
+      {
+         DirectX::XMMATRIX world = XMLoadFloat4x4(&e->World);
+
+         LWObjectConstants objConstants;
+         XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(world));
+
+         currObjectCB->CopyData(e->objectIndex, objConstants);
+
+         // Next FrameResource need to be updated too.
+         e->NumFrameDirty--;
+      }
+   }
+}
+
+void LandAndWavesApp::UpdateMainPassCB(const GameTimer& game_timer)
+{
+   DirectX::XMMATRIX view = XMLoadFloat4x4(&mView);
+   XMMATRIX proj = XMLoadFloat4x4(&mProj);
+
+   XMMATRIX viewProj = XMMatrixMultiply(view, proj);
+   XMMATRIX invView = XMMatrixInverse(&XMMatrixDeterminant(view), view);
+   XMMATRIX invProj = XMMatrixInverse(&XMMatrixDeterminant(proj), proj);
+   XMMATRIX invViewProj = XMMatrixInverse(&XMMatrixDeterminant(viewProj), viewProj);
+
+   XMStoreFloat4x4(&mMainPassCB.View, XMMatrixTranspose(view));
+   XMStoreFloat4x4(&mMainPassCB.InvView, XMMatrixTranspose(invView));
+   XMStoreFloat4x4(&mMainPassCB.Proj, XMMatrixTranspose(proj));
+   XMStoreFloat4x4(&mMainPassCB.InvProj, XMMatrixTranspose(invProj));
+   XMStoreFloat4x4(&mMainPassCB.ViewProj, XMMatrixTranspose(viewProj));
+   XMStoreFloat4x4(&mMainPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
+   mMainPassCB.EyePosW = mEyePostion;
+   mMainPassCB.RenderTargetSize = XMFLOAT2((float)mClientWidth, (float)mClientHeight);
+   mMainPassCB.InvRenderTargetSize = XMFLOAT2(1.0f / mClientWidth, 1.0f / mClientHeight);
+   mMainPassCB.NearZ = 1.0f;
+   mMainPassCB.FarZ = 1000.0f;
+   mMainPassCB.TotalTime = game_timer.TotalTime();
+   mMainPassCB.DeltaTime = game_timer.DeltaTime();
+
+   auto currPassCB = mCurrFrameResource->PassCB.get();
+   currPassCB->CopyData(0, mMainPassCB);
+}
+
+void LandAndWavesApp::UpdateWaves(const GameTimer& game_timer)
+{
+   // Every quarter second, generate a random wave.
+   static float t_base = 0.0f;
+   if((mTimer.TotalTime() - t_base) >= 0.25f)
+   {
+      t_base += 0.25f;
+
+      int i = MathHelper::Rand(4, mWaves->RowCount() - 5);
+      int j = MathHelper::Rand(4, mWaves->ColumnCount() - 5);
+
+      float r = MathHelper::RandF(0.2f, 0.5f);
+
+      mWaves->Disturb(i, j, r);
+   }
+
+   // Update the wave simulation.
+   mWaves->Update(game_timer.DeltaTime());
+
+   // Update the wave vertex buffer with the new solution.
+   auto currWavesVB = mCurrFrameResource->WavesVB.get();
+   for(int i = 0; i < mWaves->VertexCount(); ++i)
+   {
+      LWVertex v;
+
+      v.Pos = mWaves->Position(i);
+      v.Color = XMFLOAT4(DirectX::Colors::Blue);
+
+      currWavesVB->CopyData(i, v);
+   }
+
+   // Set the dynamic VB of the wave renderitem to the current frame VB.
+   mWaveRenderItem->Geo->VertexBufferGPU = currWavesVB->GetResource();
+}
+
+void LandAndWavesApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList,
+   const std::vector<RenderItem*>& render_items)
+{
+   UINT objCBByteSize = D3dUtil::CalculateConstantBufferByteSize(sizeof(LWObjectConstants));
+
+   auto objectCB = mCurrFrameResource->ObjectCB->GetResource();
+
+   // For each render item...
+   for(size_t i = 0; i < render_items.size(); ++i)
+   {
+      auto ri = render_items[i];
+
+      cmdList->IASetVertexBuffers(0, 1, &ri->Geo->VertexBufferView());
+      cmdList->IASetIndexBuffer(&ri->Geo->IndexBufferView());
+      cmdList->IASetPrimitiveTopology(ri->PrimitiveType);
+
+      D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress();
+      objCBAddress += ri->objectIndex*objCBByteSize;
+
+      cmdList->SetGraphicsRootConstantBufferView(0, objCBAddress);
+
+      cmdList->DrawIndexedInstanced(ri->IndexCount, 1, ri->StartIndexLocation, ri->BaseVertexLocation, 0);
+   }
 }
 
 

@@ -65,8 +65,8 @@ LRESULT BaseWindow::MSgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lparam)
     case WM_ACTIVATE:
         return 0;
     case WM_SIZE:
-        mClinetWidth = LOWORD(lparam);
-        mClinetHeight = HIWORD(lparam);
+        mClientWidth = LOWORD(lparam);
+        mClientHeight = HIWORD(lparam);
         return 0;
     case WM_ENTERSIZEMOVE:
         return 0;
@@ -106,7 +106,7 @@ bool BaseWindow::InitMainWindow()
     }
 
     // Compute window rectangle dimensions based on requested client area dimensions
-    RECT R = {0, 0, mClinetWidth, mClinetHeight};
+    RECT R = {0, 0, mClientWidth, mClientHeight};
     AdjustWindowRect(&R, WS_OVERLAPPEDWINDOW, false);
     int width = R.right - R.left;
     int height = R.bottom - R.top;

@@ -495,9 +495,9 @@ void ShapesApp::UpdateMainPassCB(const GameTimer& InGamTime)
     DirectX::XMStoreFloat4x4(&mMainPassCB.InvView, DirectX::XMMatrixTranspose(invView));
     DirectX::XMStoreFloat4x4(&mMainPassCB.ViewPorj, DirectX::XMMatrixTranspose(viewPorj));
     DirectX::XMStoreFloat4x4(&mMainPassCB.InvViewProj, DirectX::XMMatrixTranspose(invViewPorj));
-    mMainPassCB.EyePosW = mEyePso;
-    mMainPassCB.RenderTargetSize = DirectX::XMFLOAT2(static_cast<float>(mClinetWidth), static_cast<float>(mClinetHeight));
-    mMainPassCB.InvRenderTargetSize = DirectX::XMFLOAT2(1.0f / mClinetWidth, 1.0f / mClinetHeight);
+    mMainPassCB.EyePosW = mEyePostion;
+    mMainPassCB.RenderTargetSize = DirectX::XMFLOAT2(static_cast<float>(mClientWidth), static_cast<float>(mClientHeight));
+    mMainPassCB.InvRenderTargetSize = DirectX::XMFLOAT2(1.0f / mClientWidth, 1.0f / mClientHeight);
     mMainPassCB.NearZ = mNearZ;
     mMainPassCB.FarZ = mFarZ;
     mMainPassCB.TotalTime = InGamTime.TotalTime();
