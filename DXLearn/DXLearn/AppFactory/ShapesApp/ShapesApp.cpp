@@ -2,7 +2,6 @@
 
 #include <DirectXColors.h>
 
-#include "RenderItem.h"
 #include "ShapesFrameResource.h"
 #include "../../Common/d3dx12.h"
 #include "../../Common/GeometryGenerator.h"
@@ -260,7 +259,7 @@ void ShapesApp::BuildRenderItems()
     boxItem->Geo = mMeshGeometry[GeoName].get();
     boxItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
     boxItem->IndexCount = boxItem->Geo->DrawArgs["box"].IndexCount;
-    boxItem->BaseVertexLcoation = boxItem->Geo->DrawArgs["box"].BaseVertexLocation;
+    boxItem->BaseVertexLocation = boxItem->Geo->DrawArgs["box"].BaseVertexLocation;
     boxItem->StartIndexLocation = boxItem->Geo->DrawArgs["box"].StartIndexLocation;
     mAllRenderItems.push_back(std::move(boxItem));
 
@@ -271,7 +270,7 @@ void ShapesApp::BuildRenderItems()
     gridItem->Geo = mMeshGeometry[GeoName].get();
     gridItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
     gridItem->IndexCount = gridItem->Geo->DrawArgs["grid"].IndexCount;
-    gridItem->BaseVertexLcoation = gridItem->Geo->DrawArgs["grid"].BaseVertexLocation;
+    gridItem->BaseVertexLocation = gridItem->Geo->DrawArgs["grid"].BaseVertexLocation;
     gridItem->StartIndexLocation = gridItem->Geo->DrawArgs["grid"].StartIndexLocation;
     mAllRenderItems.push_back(std::move(gridItem));
 
@@ -293,7 +292,7 @@ void ShapesApp::BuildRenderItems()
         leftCylinderRnderItem->Geo = mMeshGeometry[GeoName].get();
         leftCylinderRnderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
         leftCylinderRnderItem->IndexCount = leftCylinderRnderItem->Geo->DrawArgs["cylinder"].IndexCount;
-        leftCylinderRnderItem->BaseVertexLcoation = leftCylinderRnderItem->Geo->DrawArgs["cylinder"].BaseVertexLocation;
+        leftCylinderRnderItem->BaseVertexLocation = leftCylinderRnderItem->Geo->DrawArgs["cylinder"].BaseVertexLocation;
         leftCylinderRnderItem->StartIndexLocation = leftCylinderRnderItem->Geo->DrawArgs["cylinder"].StartIndexLocation;
         mAllRenderItems.push_back(std::move(leftCylinderRnderItem));
 
@@ -302,7 +301,7 @@ void ShapesApp::BuildRenderItems()
         rightCylinderRenderItem->Geo = mMeshGeometry[GeoName].get();
         rightCylinderRenderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
         rightCylinderRenderItem->IndexCount = rightCylinderRenderItem->Geo->DrawArgs["cylinder"].IndexCount;
-        rightCylinderRenderItem->BaseVertexLcoation = rightCylinderRenderItem->Geo->DrawArgs["cylinder"].BaseVertexLocation;
+        rightCylinderRenderItem->BaseVertexLocation = rightCylinderRenderItem->Geo->DrawArgs["cylinder"].BaseVertexLocation;
         rightCylinderRenderItem->StartIndexLocation = rightCylinderRenderItem->Geo->DrawArgs["cylinder"].StartIndexLocation;
         mAllRenderItems.push_back(std::move(rightCylinderRenderItem));
 
@@ -311,7 +310,7 @@ void ShapesApp::BuildRenderItems()
         leftSphereRenderItem->Geo = mMeshGeometry[GeoName].get();
         leftSphereRenderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
         leftSphereRenderItem->IndexCount = leftSphereRenderItem->Geo->DrawArgs["sphere"].IndexCount;
-        leftSphereRenderItem->BaseVertexLcoation = leftSphereRenderItem->Geo->DrawArgs["sphere"].BaseVertexLocation;
+        leftSphereRenderItem->BaseVertexLocation = leftSphereRenderItem->Geo->DrawArgs["sphere"].BaseVertexLocation;
         leftSphereRenderItem->StartIndexLocation = leftSphereRenderItem->Geo->DrawArgs["sphere"].StartIndexLocation;
         mAllRenderItems.push_back(std::move(leftSphereRenderItem));
 
@@ -320,7 +319,7 @@ void ShapesApp::BuildRenderItems()
         rightSphereRenderItem->Geo = mMeshGeometry[GeoName].get();
         rightSphereRenderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
         rightSphereRenderItem->IndexCount = rightSphereRenderItem->Geo->DrawArgs["sphere"].IndexCount;
-        rightSphereRenderItem->BaseVertexLcoation = rightSphereRenderItem->Geo->DrawArgs["sphere"].BaseVertexLocation;
+        rightSphereRenderItem->BaseVertexLocation = rightSphereRenderItem->Geo->DrawArgs["sphere"].BaseVertexLocation;
         rightSphereRenderItem->StartIndexLocation = rightSphereRenderItem->Geo->DrawArgs["sphere"].StartIndexLocation;
         mAllRenderItems.push_back(std::move(rightSphereRenderItem));
     }
@@ -496,9 +495,9 @@ void ShapesApp::UpdateMainPassCB(const GameTimer& InGamTime)
     DirectX::XMStoreFloat4x4(&mMainPassCB.InvView, DirectX::XMMatrixTranspose(invView));
     DirectX::XMStoreFloat4x4(&mMainPassCB.ViewPorj, DirectX::XMMatrixTranspose(viewPorj));
     DirectX::XMStoreFloat4x4(&mMainPassCB.InvViewProj, DirectX::XMMatrixTranspose(invViewPorj));
-    mMainPassCB.EyePosW = mEyePso;
-    mMainPassCB.RenderTargetSize = DirectX::XMFLOAT2(static_cast<float>(mClinetWidth), static_cast<float>(mClinetHeight));
-    mMainPassCB.InvRenderTargetSize = DirectX::XMFLOAT2(1.0f / mClinetWidth, 1.0f / mClinetHeight);
+    mMainPassCB.EyePosW = mEyePostion;
+    mMainPassCB.RenderTargetSize = DirectX::XMFLOAT2(static_cast<float>(mClientWidth), static_cast<float>(mClientHeight));
+    mMainPassCB.InvRenderTargetSize = DirectX::XMFLOAT2(1.0f / mClientWidth, 1.0f / mClientHeight);
     mMainPassCB.NearZ = mNearZ;
     mMainPassCB.FarZ = mFarZ;
     mMainPassCB.TotalTime = InGamTime.TotalTime();
@@ -523,6 +522,6 @@ void ShapesApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::v
 
         cmdList->SetGraphicsRootDescriptorTable(0, handle);
 
-        cmdList->DrawIndexedInstanced(renderItem->IndexCount, 1, renderItem->StartIndexLocation, renderItem->BaseVertexLcoation, 0);
+        cmdList->DrawIndexedInstanced(renderItem->IndexCount, 1, renderItem->StartIndexLocation, renderItem->BaseVertexLocation, 0);
     }
 }

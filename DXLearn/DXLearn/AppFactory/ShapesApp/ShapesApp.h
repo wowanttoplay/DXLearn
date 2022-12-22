@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "RenderItem.h"
+#include "../../Common/RenderItem.h"
 #include "ShapesFrameResource.h"
 #include "../../Common/D3dApp.h"
 

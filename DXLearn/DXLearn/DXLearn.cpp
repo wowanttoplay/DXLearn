@@ -3,6 +3,7 @@
 
 #include "AppFactory/BaseApp.h"
 #include "AppFactory/Box/BoxApp.h"
+#include "AppFactory/LandAndWave/LandAndWavesApp.h"
 #include "AppFactory/ShapesApp/ShapesApp.h"
 #include "Common/BaseWindow.h"
 #include "Common/D3dApp.h"
@@ -16,7 +17,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, in
 
     try
     {
-        ShapesApp theApp(hInstance);
+        LandAndWavesApp theApp(hInstance);
         if (!theApp.Initialize())
         {
             return 0;

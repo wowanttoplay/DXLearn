@@ -1,8 +1,8 @@
 ﻿#pragma once
 #include <DirectXMath.h>
 
-#include "../../Common/D3dUtil.h"
-#include "../../Common/MathHelper.h"
+#include "MathHelper.h"
+#include "D3dUtil.h"
 
 constexpr int gNumFrameResource = 3;
 
@@ -35,5 +35,5 @@ public:
     // DrawIndexInsatnced parameter
     UINT IndexCount = 0;
     UINT StartIndexLocation = 0;
-    UINT BaseVertexLcoation = 0;
+    UINT BaseVertexLocation = 0;
 };
