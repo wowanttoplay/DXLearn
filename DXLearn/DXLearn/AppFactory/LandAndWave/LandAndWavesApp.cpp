@@ -1,6 +1,7 @@
 ﻿#include "LandAndWavesApp.h"
 
 #include <DirectXColors.h>
+#include <fstream>
 
 #include "LWFrameResource.h"
 #include "../../Common/GeometryGenerator.h"
@@ -88,7 +89,7 @@ void LandAndWavesApp::Update(const GameTimer& InGameTime)
 
    OnKeyboardInput(InGameTime);
 
-   mCurrFrameResourceIndex = (mCurrFrameResourceIndex + 1) % gNumFrameResource;
+   mCurrFrameResourceIndex = (mCurrFrameResourceIndex + 1) % gNumFrameResources;
    mCurrFrameResource = mFrameResources[mCurrFrameResourceIndex].get();
 
    // Has the GPU finished processing the commands of the current frame resource?
@@ -137,7 +138,7 @@ void LandAndWavesApp::BuildRootSignature()
 
 void LandAndWavesApp::BuildShadersAndInputLayout()
 {
-   const std::wstring ShaderPath = TEXT("AppFactory\\ShapesApp\\Shaders\\color.hlsl");
+   const std::wstring ShaderPath = TEXT("AppFactory\\Shaders\\color.hlsl");
 
    mShaders["standardVS"] = D3dUtil::CompileShader(ShaderPath, nullptr, "VS", "vs_5_1");
    mShaders["opaquePS"] = D3dUtil::CompileShader(ShaderPath, nullptr, "PS", "ps_5_1");
@@ -308,7 +309,7 @@ void LandAndWavesApp::BuildRenderItem()
 
 void LandAndWavesApp::BuildFrameResource()
 {
-   for (int i = 0; i < gNumFrameResource; ++i)
+   for (int i = 0; i < gNumFrameResources; ++i)
    {
       mFrameResources.push_back(std::make_unique<LWFrameResource>(mD3dDevice.Get(), 1, static_cast<UINT>(mAllRenderItems.size()), mWaves->VertexCount()));
    }
@@ -437,7 +438,7 @@ void LandAndWavesApp::UpdateWaves(const GameTimer& game_timer)
       LWVertex v;
 
       v.Pos = mWaves->Position(i);
-      v.Color = XMFLOAT4(DirectX::Colors::Blue);
+      v.Color = XMFLOAT4(DirectX::Colors::SkyBlue);
 
       currWavesVB->CopyData(i, v);
    }

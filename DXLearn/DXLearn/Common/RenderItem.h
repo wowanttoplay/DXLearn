@@ -4,7 +4,7 @@
 #include "MathHelper.h"
 #include "D3dUtil.h"
 
-constexpr int gNumFrameResource = 3;
+
 
 class RenderItem
 {
@@ -22,7 +22,7 @@ public:
     // Dirty flag indicating the object data has changed and we need to update the constant buffer.
     // Beacause we have an object constant buffer for each frame resource, we have to apply the update  to each frame resource
     // Thus, when we modify object data we should set NumframeDirty = gNumFrameResource so that each frame resource gets the update
-    int NumFrameDirty = gNumFrameResource;
+    int NumFrameDirty = gNumFrameResources;
 
     // Index into the GPU constant buffer correspoding to the objctCB for this render item
     UINT objectIndex = -1;

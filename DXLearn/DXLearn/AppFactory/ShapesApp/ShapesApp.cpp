@@ -39,7 +39,7 @@ void ShapesApp::Update(const GameTimer& InGameTime)
     OnKeyboardInput(InGameTime);
     D3dApp::Update(InGameTime);
 
-    mCurrentFrameResourceIndex = (mCurrentFrameResourceIndex + 1) % gNumFrameResource;
+    mCurrentFrameResourceIndex = (mCurrentFrameResourceIndex + 1) % gNumFrameResources;
     mCurrentFrameResource = mFrameResources[mCurrentFrameResourceIndex].get();
 
     // Has the GPu finished processing the commands of the current frame resource ?
@@ -334,7 +334,7 @@ void ShapesApp::BuildRenderItems()
 
 void ShapesApp::BuildFrameResource()
 {
-    for (size_t index = 0; index < gNumFrameResource; ++index)
+    for (size_t index = 0; index < gNumFrameResources; ++index)
     {
         mFrameResources.emplace_back(std::move(
             std::make_unique<ShapesFrameResource>(mD3dDevice.Get(), 1, static_cast<UINT>(mAllRenderItems.size()))));
@@ -346,10 +346,10 @@ void ShapesApp::BuildDescriptorHeaps()
     UINT objCount = static_cast<UINT>(mOpaqueRenderItems.size());
     // Need a constant buffer view descriptor for each frame resource,
     // +1 for the perpass for each fraeme resource
-    UINT numDescriptors = (objCount + 1)  * gNumFrameResource;
+    UINT numDescriptors = (objCount + 1)  * gNumFrameResources;
 
     // Save an offset to the start of the pass CBVs. There are the last 3 descriptors
-    mPassCBVOffset = objCount * gNumFrameResource;
+    mPassCBVOffset = objCount * gNumFrameResources;
 
     D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
     cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
@@ -366,7 +366,7 @@ void ShapesApp::BuildContantBufferViews()
     UINT objCount = static_cast<UINT>(mAllRenderItems.size());
 
     // Need a CBV descriptor fro each object fro each frame resource
-    for (int frameIndex = 0; frameIndex < gNumFrameResource; ++frameIndex)
+    for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
     {
         auto objectCB = mFrameResources[frameIndex]->ObjectCb->GetResource();
         for (UINT objIndex = 0; objIndex < objCount; ++objIndex)
@@ -391,7 +391,7 @@ void ShapesApp::BuildContantBufferViews()
 
     UINT passCBByteSize = D3dUtil::CalculateConstantBufferByteSize(sizeof(ShapesPassContants));
     // Last three descriptor are the pass CBVs for each frame resource
-    for (UINT frameIndex = 0; frameIndex < gNumFrameResource; ++frameIndex)
+    for (UINT frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
     {
         auto passCB = mFrameResources[frameIndex]->PassCB->GetResource();
         D3D12_GPU_VIRTUAL_ADDRESS cbvAddress = passCB->GetGPUVirtualAddress();
