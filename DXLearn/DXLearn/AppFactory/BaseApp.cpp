@@ -20,7 +20,7 @@ void BaseApp::Draw(const GameTimer& InGameTime)
     mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentRenderTargetBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
     // set the viewport and scissor rect
-    mCommandList->RSSetViewports(1, &mViewport);
+    mCommandList->RSSetViewports(1, &mScreenViewport);
     mCommandList->RSSetScissorRects(1, &mScissorRect);
 
     // clear the render target buffer and depth stencil buffer

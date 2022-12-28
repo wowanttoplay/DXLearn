@@ -15,6 +15,13 @@
 
 constexpr int gNumFrameResources = 3;
 
+enum class EPSoType
+{
+	Opaque = 0,
+	Opaque_wire,
+	Translucent,
+};
+
 class D3dUtil
 {
 public:

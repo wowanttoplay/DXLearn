@@ -56,7 +56,7 @@ void LandAndWavesApp::Draw(const GameTimer& InGameTime)
       ThrowIfFailed(mCommandList->Reset(cmdAlloc.Get(), mPSOs["opaque"].Get()));
    }
 
-   mCommandList->RSSetViewports(1, &mViewport);
+   mCommandList->RSSetViewports(1, &mScreenViewport);
    mCommandList->RSSetScissorRects(1, &mScissorRect);
 
    mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentRenderTargetBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
@@ -281,7 +281,7 @@ void LandAndWavesApp::BuildRenderItem()
    // Wave
    auto wavesRenderItem = std::make_unique<RenderItem>();
    wavesRenderItem->World = MathHelper::Identity4x4();
-   wavesRenderItem->objectIndex = 0;
+   wavesRenderItem->ObjCBIndex = 0;
    wavesRenderItem->Geo = mGeometries["waterGeo"].get();
    wavesRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
    const auto& waveSubMesh = wavesRenderItem->Geo->DrawArgs["grid"];
@@ -294,7 +294,7 @@ void LandAndWavesApp::BuildRenderItem()
    // Land
    auto gridRitem = std::make_unique<RenderItem>();
    gridRitem->World = MathHelper::Identity4x4();
-   gridRitem->objectIndex = 1;
+   gridRitem->ObjCBIndex = 1;
    gridRitem->Geo = mGeometries["landGeo"].get();
    gridRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
    gridRitem->IndexCount = gridRitem->Geo->DrawArgs["grid"].IndexCount;
@@ -369,17 +369,17 @@ void LandAndWavesApp::UpdateObjectCBs(const GameTimer& game_timer)
    {
       // Only update the cbuffer data if the constants have changed.  
       // This needs to be tracked per frame resource.
-      if(e->NumFrameDirty > 0)
+      if(e->NumFramesDirty > 0)
       {
          DirectX::XMMATRIX world = XMLoadFloat4x4(&e->World);
 
          LWObjectConstants objConstants;
          XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(world));
 
-         currObjectCB->CopyData(e->objectIndex, objConstants);
+         currObjectCB->CopyData(e->ObjCBIndex, objConstants);
 
          // Next FrameResource need to be updated too.
-         e->NumFrameDirty--;
+         e->NumFramesDirty--;
       }
    }
 }
@@ -464,7 +464,7 @@ void LandAndWavesApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList,
       cmdList->IASetPrimitiveTopology(ri->PrimitiveType);
 
       D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress();
-      objCBAddress += ri->objectIndex*objCBByteSize;
+      objCBAddress += ri->ObjCBIndex*objCBByteSize;
 
       cmdList->SetGraphicsRootConstantBufferView(0, objCBAddress);
 
