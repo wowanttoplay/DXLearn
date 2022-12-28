@@ -551,12 +551,12 @@ void D3dApp::OnResize()
     FlushCommandQueue();
     
     // Update the viewport transform to cover the clinet area
-    mViewport.TopLeftX = 0;
-    mViewport.TopLeftY = 0;
-    mViewport.Width = static_cast<float>(mClientWidth);
-    mViewport.Height = static_cast<float>(mClientHeight);
-    mViewport.MinDepth = 0.0f;
-    mViewport.MaxDepth = 1.0f;
+    mScreenViewport.TopLeftX = 0;
+    mScreenViewport.TopLeftY = 0;
+    mScreenViewport.Width = static_cast<float>(mClientWidth);
+    mScreenViewport.Height = static_cast<float>(mClientHeight);
+    mScreenViewport.MinDepth = 0.0f;
+    mScreenViewport.MaxDepth = 1.0f;
 
     mScissorRect = {0, 0, mClientWidth, mClientHeight};
 
@@ -591,6 +591,13 @@ void D3dApp::FlushCommandQueue()
         WaitForSingleObject(eventHandle, INFINITE);
         CloseHandle(eventHandle);
     }
+}
+
+void D3dApp::ExecuteCommandList() const
+{
+    ThrowIfFailed(mCommandList->Close());
+    ID3D12CommandList* cmdList[] = {mCommandList.Get()};
+    mCommandQueue->ExecuteCommandLists(_countof(cmdList), cmdList);
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE D3dApp::DepthStencilView() const

@@ -60,7 +60,7 @@ void BoxApp::Draw(const GameTimer& InGameTime)
     ThrowIfFailed(mCommandList->Reset(mCommandAlloctor.Get(), mPSO.Get()));
 
     // 设置视图
-    mCommandList->RSSetViewports(1, &mViewport);
+    mCommandList->RSSetViewports(1, &mScreenViewport);
     mCommandList->RSSetScissorRects(1, &mScissorRect);
 
     // 转换render target resource state

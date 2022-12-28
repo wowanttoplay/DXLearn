@@ -47,6 +47,7 @@ protected:
     virtual void OnResize();
     void SetMsaaState(bool InState);
     void FlushCommandQueue();
+    void ExecuteCommandList() const;
     D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView() const;
     D3D12_CPU_DESCRIPTOR_HANDLE RenderTargetView() const;
     ID3D12Resource* CurrentRenderTargetBuffer() const;
@@ -78,7 +79,7 @@ protected:
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mRtvHeap;
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mDsvHeap;
 
-    D3D12_VIEWPORT mViewport;
+    D3D12_VIEWPORT mScreenViewport;
     D3D12_RECT mScissorRect;
 
     DXGI_FORMAT mBackBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;

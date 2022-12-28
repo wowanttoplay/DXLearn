@@ -1,12 +1,8 @@
 
 #include <DirectXColors.h>
 
-#include "AppFactory/BaseApp.h"
-#include "AppFactory/Box/BoxApp.h"
-#include "AppFactory/LandAndWave/LandAndWavesApp.h"
-#include "AppFactory/ShapesApp/ShapesApp.h"
+#include "AppFactory/Light/LightApp.h"
 #include "Common/BaseWindow.h"
-#include "Common/D3dApp.h"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, int showCmd)
 {
@@ -17,7 +13,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, in
 
     try
     {
-        LandAndWavesApp theApp(hInstance);
+        LightApp theApp(hInstance);
         if (!theApp.Initialize())
         {
             return 0;

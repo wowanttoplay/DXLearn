@@ -39,7 +39,7 @@ void ShapesApp::Update(const GameTimer& InGameTime)
     OnKeyboardInput(InGameTime);
     D3dApp::Update(InGameTime);
 
-    mCurrentFrameResourceIndex = (mCurrentFrameResourceIndex + 1) % gNumFrameResource;
+    mCurrentFrameResourceIndex = (mCurrentFrameResourceIndex + 1) % gNumFrameResources;
     mCurrentFrameResource = mFrameResources[mCurrentFrameResourceIndex].get();
 
     // Has the GPu finished processing the commands of the current frame resource ?
@@ -64,7 +64,7 @@ void ShapesApp::Draw(const GameTimer& InGameTime)
     Microsoft::WRL::ComPtr<ID3D12PipelineState> currentPiplineState = mIsWireframe ? mPSOs["opaque_wrieframe"] : mPSOs["opaque"];
     ThrowIfFailed(mCommandList->Reset(cmdAlloc.Get(), currentPiplineState.Get()));
 
-    mCommandList->RSSetViewports(1, &mViewport);
+    mCommandList->RSSetViewports(1, &mScreenViewport);
     mCommandList->RSSetScissorRects(1, &mScissorRect);
 
     mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentRenderTargetBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
@@ -255,7 +255,7 @@ void ShapesApp::BuildRenderItems()
     // box render item
     auto boxItem = std::make_unique<RenderItem>();
     DirectX::XMStoreFloat4x4(&boxItem->World, DirectX::XMMatrixScaling(2.0, 2.0, 2.0) * DirectX::XMMatrixTranslation(0.0f, 0.5f, 0.0f));
-    boxItem->objectIndex = 0;
+    boxItem->ObjCBIndex = 0;
     boxItem->Geo = mMeshGeometry[GeoName].get();
     boxItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
     boxItem->IndexCount = boxItem->Geo->DrawArgs["box"].IndexCount;
@@ -266,7 +266,7 @@ void ShapesApp::BuildRenderItems()
     // grid render item
     auto gridItem = std::make_unique<RenderItem>();
     gridItem->World = MathHelper::Identity4x4();
-    gridItem->objectIndex = 1;
+    gridItem->ObjCBIndex = 1;
     gridItem->Geo = mMeshGeometry[GeoName].get();
     gridItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
     gridItem->IndexCount = gridItem->Geo->DrawArgs["grid"].IndexCount;
@@ -288,7 +288,7 @@ void ShapesApp::BuildRenderItems()
         DirectX::XMMATRIX rightSphereWorld = DirectX::XMMatrixTranslation(5.0f, 3.5f, -10.0f + index * 5.0f);
 
         DirectX::XMStoreFloat4x4(&leftCylinderRnderItem->World, leftCylinderWorld);
-        leftCylinderRnderItem->objectIndex = objectIndex++;
+        leftCylinderRnderItem->ObjCBIndex = objectIndex++;
         leftCylinderRnderItem->Geo = mMeshGeometry[GeoName].get();
         leftCylinderRnderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
         leftCylinderRnderItem->IndexCount = leftCylinderRnderItem->Geo->DrawArgs["cylinder"].IndexCount;
@@ -297,7 +297,7 @@ void ShapesApp::BuildRenderItems()
         mAllRenderItems.push_back(std::move(leftCylinderRnderItem));
 
         DirectX::XMStoreFloat4x4(&rightCylinderRenderItem->World, rightCylinderWorld);
-        rightCylinderRenderItem->objectIndex = objectIndex++;
+        rightCylinderRenderItem->ObjCBIndex = objectIndex++;
         rightCylinderRenderItem->Geo = mMeshGeometry[GeoName].get();
         rightCylinderRenderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
         rightCylinderRenderItem->IndexCount = rightCylinderRenderItem->Geo->DrawArgs["cylinder"].IndexCount;
@@ -306,7 +306,7 @@ void ShapesApp::BuildRenderItems()
         mAllRenderItems.push_back(std::move(rightCylinderRenderItem));
 
         DirectX::XMStoreFloat4x4(&leftSphereRenderItem->World, leftSphereWorld);
-        leftSphereRenderItem->objectIndex = objectIndex++;
+        leftSphereRenderItem->ObjCBIndex = objectIndex++;
         leftSphereRenderItem->Geo = mMeshGeometry[GeoName].get();
         leftSphereRenderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
         leftSphereRenderItem->IndexCount = leftSphereRenderItem->Geo->DrawArgs["sphere"].IndexCount;
@@ -315,7 +315,7 @@ void ShapesApp::BuildRenderItems()
         mAllRenderItems.push_back(std::move(leftSphereRenderItem));
 
         DirectX::XMStoreFloat4x4(&rightSphereRenderItem->World, rightSphereWorld);
-        rightSphereRenderItem->objectIndex = objectIndex++;
+        rightSphereRenderItem->ObjCBIndex = objectIndex++;
         rightSphereRenderItem->Geo = mMeshGeometry[GeoName].get();
         rightSphereRenderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
         rightSphereRenderItem->IndexCount = rightSphereRenderItem->Geo->DrawArgs["sphere"].IndexCount;
@@ -334,7 +334,7 @@ void ShapesApp::BuildRenderItems()
 
 void ShapesApp::BuildFrameResource()
 {
-    for (size_t index = 0; index < gNumFrameResource; ++index)
+    for (size_t index = 0; index < gNumFrameResources; ++index)
     {
         mFrameResources.emplace_back(std::move(
             std::make_unique<ShapesFrameResource>(mD3dDevice.Get(), 1, static_cast<UINT>(mAllRenderItems.size()))));
@@ -346,10 +346,10 @@ void ShapesApp::BuildDescriptorHeaps()
     UINT objCount = static_cast<UINT>(mOpaqueRenderItems.size());
     // Need a constant buffer view descriptor for each frame resource,
     // +1 for the perpass for each fraeme resource
-    UINT numDescriptors = (objCount + 1)  * gNumFrameResource;
+    UINT numDescriptors = (objCount + 1)  * gNumFrameResources;
 
     // Save an offset to the start of the pass CBVs. There are the last 3 descriptors
-    mPassCBVOffset = objCount * gNumFrameResource;
+    mPassCBVOffset = objCount * gNumFrameResources;
 
     D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
     cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
@@ -366,7 +366,7 @@ void ShapesApp::BuildContantBufferViews()
     UINT objCount = static_cast<UINT>(mAllRenderItems.size());
 
     // Need a CBV descriptor fro each object fro each frame resource
-    for (int frameIndex = 0; frameIndex < gNumFrameResource; ++frameIndex)
+    for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
     {
         auto objectCB = mFrameResources[frameIndex]->ObjectCb->GetResource();
         for (UINT objIndex = 0; objIndex < objCount; ++objIndex)
@@ -391,7 +391,7 @@ void ShapesApp::BuildContantBufferViews()
 
     UINT passCBByteSize = D3dUtil::CalculateConstantBufferByteSize(sizeof(ShapesPassContants));
     // Last three descriptor are the pass CBVs for each frame resource
-    for (UINT frameIndex = 0; frameIndex < gNumFrameResource; ++frameIndex)
+    for (UINT frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
     {
         auto passCB = mFrameResources[frameIndex]->PassCB->GetResource();
         D3D12_GPU_VIRTUAL_ADDRESS cbvAddress = passCB->GetGPUVirtualAddress();
@@ -465,16 +465,16 @@ void ShapesApp::UpdateObjectCBs(const GameTimer& IngameTime)
     auto objCBBuffer = mCurrentFrameResource->ObjectCb.get();
     for (auto& e : mAllRenderItems)
     {
-        if (e->NumFrameDirty > 0)
+        if (e->NumFramesDirty > 0)
         {
             DirectX::XMMATRIX world = DirectX::XMLoadFloat4x4(&e->World);
 
             shapesObjectConstants objConstant;
             DirectX::XMStoreFloat4x4(&objConstant.World, DirectX::XMMatrixTranspose(world));
 
-            objCBBuffer->CopyData(e->objectIndex, objConstant);
+            objCBBuffer->CopyData(e->ObjCBIndex, objConstant);
 
-            e->NumFrameDirty--;
+            e->NumFramesDirty--;
         }
     }
 }
@@ -516,7 +516,7 @@ void ShapesApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::v
         cmdList->IASetIndexBuffer(&renderItem->Geo->IndexBufferView());
         cmdList->IASetPrimitiveTopology(renderItem->PrimitiveType);
 
-        UINT cbvIndex = mCurrentFrameResourceIndex * static_cast<UINT>(mOpaqueRenderItems.size()) + renderItem->objectIndex;
+        UINT cbvIndex = mCurrentFrameResourceIndex * static_cast<UINT>(mOpaqueRenderItems.size()) + renderItem->ObjCBIndex;
         auto handle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
         handle.Offset(cbvIndex, mCbvHandleSize);
 
