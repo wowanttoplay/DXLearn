@@ -19,9 +19,12 @@ bool LightApp::Initialize()
 
     ThrowIfFailed(mCommandList->Reset(mCommandAlloctor.Get(), nullptr));
 
+    BuildTextures();
     BuildRootSignature();
     BuildShadersAndInputLayout();
+    BuildDescriptorHeaps();
     BuildGeometry();
+ 
     BuildMaterials();
     BuildRenderItems();
     BuildFrameResources();
@@ -152,6 +155,10 @@ void LightApp::BuildShadersAndInputLayout()
     
 }
 
+void LightApp::BuildDescriptorHeaps()
+{
+}
+
 void LightApp::BuildGeometry()
 {
     BuildShapeGeometry();
@@ -262,13 +269,17 @@ void LightApp::BuildRenderItems()
 		mOpaqueRitems.push_back(e.get());
 }
 
+void LightApp::BuildTextures()
+{
+}
+
 void LightApp::BuildMaterials()
 {
     auto bricks0 = std::make_unique<Material>();
     bricks0->Name = "bricks0";
     bricks0->MatCBIndex = 0;
     bricks0->DiffuseSrvHeapIndex = 0;
-    bricks0->DiffuseAlbedo = XMFLOAT4(Colors::ForestGreen);
+    bricks0->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
     bricks0->FresnelR0 = XMFLOAT3(0.02f, 0.02f, 0.02f);
     bricks0->Roughness = 0.1f;
 
@@ -276,7 +287,7 @@ void LightApp::BuildMaterials()
     stone0->Name = "stone0";
     stone0->MatCBIndex = 1;
     stone0->DiffuseSrvHeapIndex = 1;
-    stone0->DiffuseAlbedo = XMFLOAT4(Colors::LightSteelBlue);
+    stone0->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
     stone0->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
     stone0->Roughness = 0.3f;
  
@@ -284,9 +295,9 @@ void LightApp::BuildMaterials()
     tile0->Name = "tile0";
     tile0->MatCBIndex = 2;
     tile0->DiffuseSrvHeapIndex = 2;
-    tile0->DiffuseAlbedo = XMFLOAT4(Colors::LightGray);
+    tile0->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
     tile0->FresnelR0 = XMFLOAT3(0.02f, 0.02f, 0.02f);
-    tile0->Roughness = 0.2f;
+    tile0->Roughness = 0.3f;
 
     auto skullMat = std::make_unique<Material>();
     skullMat->Name = "skullMat";
@@ -541,24 +552,28 @@ void LightApp::BuildShapeGeometry()
     {
         vertices[k].Pos = box.Vertices[i].Position;
         vertices[k].Normal = box.Vertices[i].Normal;
+        vertices[k].TexC = box.Vertices[i].TexC;
     }
 
     for(size_t i = 0; i < grid.Vertices.size(); ++i, ++k)
     {
         vertices[k].Pos = grid.Vertices[i].Position;
         vertices[k].Normal = grid.Vertices[i].Normal;
+        vertices[k].TexC = grid.Vertices[i].TexC;
     }
 
     for(size_t i = 0; i < sphere.Vertices.size(); ++i, ++k)
     {
         vertices[k].Pos = sphere.Vertices[i].Position;
         vertices[k].Normal = sphere.Vertices[i].Normal;
+        vertices[k].TexC = sphere.Vertices[i].TexC;
     }
 
     for(size_t i = 0; i < cylinder.Vertices.size(); ++i, ++k)
     {
         vertices[k].Pos = cylinder.Vertices[i].Position;
         vertices[k].Normal = cylinder.Vertices[i].Normal;
+        vertices[k].TexC = cylinder.Vertices[i].TexC;
     }
 
     std::vector<std::uint16_t> indices;

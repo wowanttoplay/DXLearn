@@ -1,7 +1,7 @@
 
 #include <DirectXColors.h>
 
-#include "AppFactory/Light/LightApp.h"
+#include "AppFactory/Texture/TextureApp.h"
 #include "Common/BaseWindow.h"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, int showCmd)
@@ -13,7 +13,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, in
 
     try
     {
-        LightApp theApp(hInstance);
+        TextureApp theApp(hInstance);
         if (!theApp.Initialize())
         {
             return 0;

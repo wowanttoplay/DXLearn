@@ -85,7 +85,7 @@ VertexOut VS(VertexIn vin)
 
     // Transform to world space
     float4 posw = mul(float4(vin.PosL, 1.0f), gWorld);
-    vout.PosW = posw;
+    vout.PosW = posw.xyz;
 
     // Assumes nonuniform scaling; otherwise, need to use inverse-transpose of world matrix
     vout.NormalW = mul(vin.NormalL, (float3x3)gWorld);

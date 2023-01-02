@@ -21,8 +21,10 @@ public:
 protected:
     virtual void BuildRootSignature();
     virtual void BuildShadersAndInputLayout();
+    virtual void BuildDescriptorHeaps();
     virtual void BuildGeometry();
     virtual void BuildRenderItems();
+    virtual void BuildTextures();
     virtual void BuildMaterials();
     virtual void BuildFrameResources();
     virtual void BuildPSOs();
@@ -63,7 +65,7 @@ protected:
 protected:
     bool mIsWireframe = false;
 
-private:
+protected:
     void BuildShapeGeometry();
     void BuildSkullGeometry();
 };
