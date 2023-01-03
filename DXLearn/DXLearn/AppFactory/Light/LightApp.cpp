@@ -45,7 +45,7 @@ void LightApp::Update(const GameTimer& InGameTime)
 
     // Cycle through the circular frame resource array.
     mCurrFrameResourceIndex = (mCurrFrameResourceIndex + 1) % gNumFrameResources;
-    mCurrFrameResource = mFrameResources[mCurrFrameResourceIndex].get();
+    mCurrFrameResource = mFrameResources[mCurrFrameResourceIndex];
 
     // Has the GPU finished processing the commands of the current frame resource?
     // If not, wait until the GPU has completed commands up to this fence point.
@@ -88,10 +88,10 @@ void LightApp::Draw(const GameTimer& InGameTime)
     mCommandList->OMSetRenderTargets(1, &RenderTargetView(), true, &DepthStencilView());
     mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 
-    auto passCB = mCurrFrameResource->PassCB->GetResource();
+    auto passCB = dynamic_pointer_cast<LightFrameResource>(mCurrFrameResource)->PassCB->GetResource();
     mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
-    DrawRenderItems(mCommandList.Get(), mOpaqueRitems);
+    DrawRenderItems(mCommandList.Get(), mRItemLayers[ERenderLayer::Opaque]);
 
     // Indicate a state transition on the resource usage.
     mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentRenderTargetBuffer(),
@@ -266,7 +266,7 @@ void LightApp::BuildRenderItems()
 
 	// All the render items are opaque.
 	for(auto& e : mAllRitems)
-		mOpaqueRitems.push_back(e.get());
+		mRItemLayers[ERenderLayer::Opaque].push_back(e.get());
 }
 
 void LightApp::BuildTextures()
@@ -317,7 +317,7 @@ void LightApp::BuildFrameResources()
 {
     for (int i = 0; i < gNumFrameResources; ++i)
     {
-        mFrameResources.emplace_back(std::make_unique<LightFrameResource>(mD3dDevice.Get(),
+        mFrameResources.emplace_back(std::make_shared<LightFrameResource>(mD3dDevice.Get(),
             1,
             static_cast<UINT>(mAllRitems.size()),
             static_cast<UINT>(mMaterials.size())
@@ -350,8 +350,8 @@ void LightApp::BuildPSOs()
     opaquePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
     opaquePsoDesc.NumRenderTargets = 1;
     opaquePsoDesc.RTVFormats[0] = mBackBufferFormat;
-    opaquePsoDesc.SampleDesc.Count = mMsaaState ? 4 : 1;
-    opaquePsoDesc.SampleDesc.Quality = mMsaaState ? (mMsaaQuality - 1) : 0;
+    opaquePsoDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
+    opaquePsoDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
     opaquePsoDesc.DSVFormat = mDepthStencilFormat;
     ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs[EPSoType::Opaque])));
 
@@ -375,7 +375,7 @@ void LightApp::AnimateMaterials(const GameTimer& InGameTime)
 
 void LightApp::UpdateObjectCBs(const GameTimer& InGameTime)
 {
-    auto currObjectCB = mCurrFrameResource->ObjectCB.get();
+    auto currObjectCB = dynamic_pointer_cast<LightFrameResource>(mCurrFrameResource)->ObjectCB.get();
     for(auto& e : mAllRitems)
     {
         // Only update the cbuffer data if the constants have changed.  
@@ -399,7 +399,7 @@ void LightApp::UpdateObjectCBs(const GameTimer& InGameTime)
 
 void LightApp::UpdateMaterialCBs(const GameTimer& InGameTime)
 {
-    auto currMaterialCB = mCurrFrameResource->MaterialCB.get();
+    auto currMaterialCB = dynamic_pointer_cast<LightFrameResource>(mCurrFrameResource)->MaterialCB.get();
     for(auto& e : mMaterials)
     {
         // Only update the cbuffer data if the constants have changed.  If the cbuffer
@@ -459,7 +459,7 @@ void LightApp::UpdateMainPassCB(const GameTimer& InGameTime)
     mMainPassCB->Lights[2].Direction = { 0.0f, -0.707f, -0.707f };
     mMainPassCB->Lights[2].Strength = { 0.15f, 0.15f, 0.15f };
 
-    auto currPassCB = mCurrFrameResource->PassCB.get();
+    auto currPassCB = dynamic_pointer_cast<LightFrameResource>(mCurrFrameResource)->PassCB.get();
     currPassCB->CopyData(0, *mMainPassCB);
 }
 
@@ -467,9 +467,9 @@ void LightApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::ve
 {
     UINT objCBByteSize = D3dUtil::CalculateConstantBufferByteSize(sizeof(LightObjectConstants));
     UINT matCBByteSize = D3dUtil::CalculateConstantBufferByteSize(sizeof(MaterialConstants));
-
-    auto objectCB = mCurrFrameResource->ObjectCB->GetResource();
-    auto matCB = mCurrFrameResource->MaterialCB->GetResource();
+    
+    auto objectCB = dynamic_pointer_cast<LightFrameResource>(mCurrFrameResource)->ObjectCB->GetResource();
+    auto matCB = dynamic_pointer_cast<LightFrameResource>(mCurrFrameResource)->MaterialCB->GetResource();
 
     for (size_t i = 0; i < rItems.size(); ++i)
     {

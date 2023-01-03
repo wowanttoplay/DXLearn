@@ -1,6 +1,7 @@
 
 #include <DirectXColors.h>
 
+#include "AppFactory/BlendApp/BlendApp.h"
 #include "AppFactory/Texture/TextureApp.h"
 #include "Common/BaseWindow.h"
 
@@ -13,7 +14,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, in
 
     try
     {
-        TextureApp theApp(hInstance);
+        BlendApp theApp(hInstance);
         if (!theApp.Initialize())
         {
             return 0;

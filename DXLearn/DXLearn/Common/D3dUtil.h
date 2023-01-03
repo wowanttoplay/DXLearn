@@ -15,11 +15,24 @@
 
 constexpr int gNumFrameResources = 3;
 
-enum class EPSoType
+#define SHADER_PATH "AppFactory/Shaders/"
+#define MODELS_PATH "AppFactory/Models/"
+
+enum class EPSoType : int
 {
 	Opaque = 0,
 	Opaque_wire,
 	Translucent,
+	AlphaTest,
+	Count
+};
+
+enum class ERenderLayer : int
+{
+	Opaque = 0,
+	Translucent,
+	AlphaTested,
+	Count
 };
 
 class D3dUtil

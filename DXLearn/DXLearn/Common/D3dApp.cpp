@@ -174,7 +174,7 @@ LRESULT D3dApp::MSgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             PostQuitMessage(0);
         }
         else if((int)wParam == VK_F2)
-            SetMsaaState(!mMsaaState);
+            SetMsaaState(!m4xMsaaState);
 
         return 0;
     }
@@ -320,8 +320,8 @@ void D3dApp::InitMsaaState()
 
     ThrowIfFailed(mD3dDevice->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msQualityLevels, sizeof(msQualityLevels)));
 
-    mMsaaQuality = msQualityLevels.NumQualityLevels;
-    assert(mMsaaQuality > 0);
+    m4xMsaaQuality = msQualityLevels.NumQualityLevels;
+    assert(m4xMsaaQuality > 0);
 }
 
 void D3dApp::CreateCommandObjects()
@@ -355,8 +355,8 @@ void D3dApp::CreateSwapChain()
     swapChainDesc.BufferDesc.Format = mBackBufferFormat;
     swapChainDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
     swapChainDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-    swapChainDesc.SampleDesc.Count = mMsaaState ? 4 : 1;
-    swapChainDesc.SampleDesc.Quality = mMsaaState ? mMsaaQuality - 1 : 0;
+    swapChainDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
+    swapChainDesc.SampleDesc.Quality = m4xMsaaState ? m4xMsaaQuality - 1 : 0;
     swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     swapChainDesc.BufferCount = 2;
     swapChainDesc.OutputWindow = mhMainWnd;
@@ -492,8 +492,8 @@ void D3dApp::CreateDepthStencilBufferAndView()
     depthStencilDesc.DepthOrArraySize = 1;
     depthStencilDesc.MipLevels = 1;
     depthStencilDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
-    depthStencilDesc.SampleDesc.Count = mMsaaState ? 4 : 1;
-    depthStencilDesc.SampleDesc.Quality = mMsaaState ? mMsaaQuality - 1 : 0;
+    depthStencilDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
+    depthStencilDesc.SampleDesc.Quality = m4xMsaaState ? m4xMsaaQuality - 1 : 0;
     depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
     depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 
@@ -566,9 +566,9 @@ void D3dApp::OnResize()
 
 void D3dApp::SetMsaaState(bool InState)
 {
-    if (mMsaaState != InState)
+    if (m4xMsaaState != InState)
     {
-        mMsaaState = InState;
+        m4xMsaaState = InState;
         CreateSwapChain();
         OnResize();
     }

@@ -36,10 +36,10 @@ void TextureApp::Draw(const GameTimer& InGameTime)
     ID3D12DescriptorHeap* descHeaps[] = {mSrvheap.Get()};
     mCommandList->SetDescriptorHeaps(_countof(descHeaps), descHeaps);
 
-    auto passCB = mCurrFrameResource->PassCB->GetResource();
+    auto passCB = dynamic_pointer_cast<LightFrameResource>(mCurrFrameResource)->PassCB->GetResource();
     mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
-    DrawRenderItems(mCommandList.Get(), mOpaqueRitems);
+    DrawRenderItems(mCommandList.Get(), mRItemLayers[ERenderLayer::Opaque]);
 
     // Indicate a state transition on the resource usage.
     mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentRenderTargetBuffer(),
@@ -66,7 +66,7 @@ void TextureApp::BuildRootSignature()
 
     auto staticSampler = GetStaticSamplers();
 
-    CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(4, slotParameters, staticSampler.size(), staticSampler.data(),
+    CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(4, slotParameters, static_cast<UINT>(staticSampler.size()), staticSampler.data(),
         D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
     // create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
@@ -185,8 +185,8 @@ void TextureApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::
     UINT objCBByteSize = D3dUtil::CalculateConstantBufferByteSize(sizeof(LightObjectConstants));
     UINT matCBByteSize = D3dUtil::CalculateConstantBufferByteSize(sizeof(MaterialConstants));
 
-    auto objectCB = mCurrFrameResource->ObjectCB->GetResource();
-    auto matCB = mCurrFrameResource->MaterialCB->GetResource();
+    auto objectCB = dynamic_pointer_cast<LightFrameResource>(mCurrFrameResource)->ObjectCB->GetResource();
+    auto matCB = dynamic_pointer_cast<LightFrameResource>(mCurrFrameResource)->MaterialCB->GetResource();
     
     // For each render item...
     for(size_t i = 0; i < rItems.size(); ++i)

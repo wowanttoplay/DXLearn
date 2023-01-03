@@ -45,7 +45,7 @@ protected:
 protected:
     std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> mGeometries;
     std::vector<std::unique_ptr<RenderItem>> mAllRitems;
-    std::vector<RenderItem*> mOpaqueRitems;
+    std::unordered_map<ERenderLayer, std::vector<RenderItem*>> mRItemLayers;
 
 protected:
     std::unordered_map<EPSoType, Microsoft::WRL::ComPtr<ID3D12PipelineState>> mPSOs;
@@ -55,8 +55,8 @@ protected:
     std::unordered_map<std::string, std::unique_ptr<Texture>> mTextures;
 
 protected:
-    std::vector<std::unique_ptr<LightFrameResource>> mFrameResources;
-    LightFrameResource* mCurrFrameResource = nullptr;
+    std::vector<std::shared_ptr<FrameResource>> mFrameResources;
+    std::shared_ptr<FrameResource> mCurrFrameResource = nullptr;
     int mCurrFrameResourceIndex = 0;
     
 protected:
