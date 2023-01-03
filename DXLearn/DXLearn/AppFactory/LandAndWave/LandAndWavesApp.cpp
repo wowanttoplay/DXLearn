@@ -69,7 +69,7 @@ void LandAndWavesApp::Draw(const GameTimer& InGameTime)
    auto passCB = mCurrFrameResource->PassCB->GetResource();
    mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
 
-   DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::Opaque]);
+   DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)ERenderLayer::Opaque]);
 
    mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentRenderTargetBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
    ThrowIfFailed(mCommandList->Close());
@@ -289,7 +289,7 @@ void LandAndWavesApp::BuildRenderItem()
    wavesRenderItem->StartIndexLocation = waveSubMesh.StartIndexLocation;
    wavesRenderItem->BaseVertexLocation = waveSubMesh.BaseVertexLocation;
    mWaveRenderItem = wavesRenderItem.get();
-   mRitemLayer[static_cast<int>(RenderLayer::Opaque)].push_back(wavesRenderItem.get());
+   mRitemLayer[static_cast<int>(ERenderLayer::Opaque)].push_back(wavesRenderItem.get());
 
    // Land
    auto gridRitem = std::make_unique<RenderItem>();
@@ -301,7 +301,7 @@ void LandAndWavesApp::BuildRenderItem()
    gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs["grid"].StartIndexLocation;
    gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
 
-   mRitemLayer[(int)RenderLayer::Opaque].push_back(gridRitem.get());
+   mRitemLayer[(int)ERenderLayer::Opaque].push_back(gridRitem.get());
    
    mAllRenderItems.push_back(std::move(wavesRenderItem));
    mAllRenderItems.push_back(std::move(gridRitem));
@@ -342,8 +342,8 @@ void LandAndWavesApp::BuildPSO()
    opaquePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
    opaquePsoDesc.NumRenderTargets = 1;
    opaquePsoDesc.RTVFormats[0] = mBackBufferFormat;
-   opaquePsoDesc.SampleDesc.Count = mMsaaState ? 4 : 1;
-   opaquePsoDesc.SampleDesc.Quality = mMsaaState ? (mMsaaQuality - 1) : 0;
+   opaquePsoDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
+   opaquePsoDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
    opaquePsoDesc.DSVFormat = mDepthStencilFormat;
    
    ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs["opaque"])));

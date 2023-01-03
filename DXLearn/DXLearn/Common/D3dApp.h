@@ -59,8 +59,8 @@ protected:
     Microsoft::WRL::ComPtr<ID3D12Fence> mFence;
     UINT64 mCurrentFence = 0;
 
-    bool mMsaaState = false; // true to use MSAA
-    UINT mMsaaQuality = 0;   // quality level of msaa
+    bool m4xMsaaState = false; // true to use MSAA
+    UINT m4xMsaaQuality = 0;   // quality level of msaa
     
     UINT mRtvDescHandleSize = 0;
     UINT mDscDescHandleSize = 0;

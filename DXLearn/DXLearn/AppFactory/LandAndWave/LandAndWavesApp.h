@@ -4,12 +4,6 @@
 #include "../../Common/D3dApp.h"
 #include "../../Common/RenderItem.h"
 
-enum class RenderLayer : int
-{
-    Opaque = 0,
-    Count
-};
-
 class LandAndWavesApp : public D3dApp
 {
 public:
@@ -43,7 +37,7 @@ private:
     // List of all render items
     std::vector<std::unique_ptr<RenderItem>> mAllRenderItems;
     // Render Items divided by PSO
-    std::vector<RenderItem*> mRitemLayer[static_cast<int>(RenderLayer::Count)];
+    std::vector<RenderItem*> mRitemLayer[static_cast<int>(ERenderLayer::Count)];
     RenderItem* mWaveRenderItem = nullptr;
 
 private:
