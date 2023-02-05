@@ -121,7 +121,7 @@ void ShapesApp::BuildRootSignature()
     }
     ThrowIfFailed(rst);
 
-    ThrowIfFailed(mD3dDevice->CreateRootSignature(
+    ThrowIfFailed(md3dDevice->CreateRootSignature(
         0,
         serializedRootSignature->GetBufferPointer(),
         serializedRootSignature->GetBufferSize(),
@@ -234,8 +234,8 @@ void ShapesApp::BuildMeshGeometry()
     ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
     CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), TotaleIndices.data(), ibByteSize);
 
-    geo->VertexBufferGPU = D3dUtil::CreateDefaultBuffer(mD3dDevice.Get(), mCommandList.Get(), TotalVertices.data(), vbBytesSize, geo->VertexBufferUploader);
-    geo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(mD3dDevice.Get(), mCommandList.Get(), TotaleIndices.data(), ibByteSize, geo->IndexBufferUploader);
+    geo->VertexBufferGPU = D3dUtil::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), TotalVertices.data(), vbBytesSize, geo->VertexBufferUploader);
+    geo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), TotaleIndices.data(), ibByteSize, geo->IndexBufferUploader);
 
     geo->VertexByteStride = sizeof(ShapedVertex);
     geo->VertexBufferByteSize = vbBytesSize;
@@ -337,7 +337,7 @@ void ShapesApp::BuildFrameResource()
     for (size_t index = 0; index < gNumFrameResources; ++index)
     {
         mFrameResources.emplace_back(std::move(
-            std::make_unique<ShapesFrameResource>(mD3dDevice.Get(), 1, static_cast<UINT>(mAllRenderItems.size()))));
+            std::make_unique<ShapesFrameResource>(md3dDevice.Get(), 1, static_cast<UINT>(mAllRenderItems.size()))));
     }
 }
 
@@ -357,7 +357,7 @@ void ShapesApp::BuildDescriptorHeaps()
     cbvHeapDesc.NodeMask = 0u;
     cbvHeapDesc.NumDescriptors = numDescriptors;
 
-    ThrowIfFailed(mD3dDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&mDescriptorHeap)));
+    ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&mDescriptorHeap)));
 }
 
 void ShapesApp::BuildContantBufferViews()
@@ -385,7 +385,7 @@ void ShapesApp::BuildContantBufferViews()
             cbvDesc.BufferLocation = cbvAddress;
             cbvDesc.SizeInBytes = objCBByteSize;
 
-            mD3dDevice->CreateConstantBufferView(&cbvDesc, handle);
+            md3dDevice->CreateConstantBufferView(&cbvDesc, handle);
         }
     }
 
@@ -405,7 +405,7 @@ void ShapesApp::BuildContantBufferViews()
         cbvDesc.BufferLocation = cbvAddress;
         cbvDesc.SizeInBytes = passCBByteSize;
 
-        mD3dDevice->CreateConstantBufferView(&cbvDesc, handle);
+        md3dDevice->CreateConstantBufferView(&cbvDesc, handle);
     }
 }
 
@@ -440,12 +440,12 @@ void ShapesApp::BuildPSO()
     opaquePsoDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
     opaquePsoDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
     opaquePsoDesc.DSVFormat = mDepthStencilFormat;
-    ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs["opaque"])));
+    ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs["opaque"])));
 
 
     D3D12_GRAPHICS_PIPELINE_STATE_DESC opaqueWireframePsoDesc = opaquePsoDesc;
     opaqueWireframePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
-    ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&opaqueWireframePsoDesc, IID_PPV_ARGS(&mPSOs["opaque_wrieframe"])));
+    ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&opaqueWireframePsoDesc, IID_PPV_ARGS(&mPSOs["opaque_wrieframe"])));
 }
 
 void ShapesApp::OnKeyboardInput(const GameTimer& InGameTime)

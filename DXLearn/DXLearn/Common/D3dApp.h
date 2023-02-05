@@ -55,7 +55,7 @@ protected:
 
 protected:
     Microsoft::WRL::ComPtr<IDXGIFactory4> mDxgiFactory;
-    Microsoft::WRL::ComPtr<ID3D12Device> mD3dDevice;
+    Microsoft::WRL::ComPtr<ID3D12Device> md3dDevice;
     Microsoft::WRL::ComPtr<ID3D12Fence> mFence;
     UINT64 mCurrentFence = 0;
 

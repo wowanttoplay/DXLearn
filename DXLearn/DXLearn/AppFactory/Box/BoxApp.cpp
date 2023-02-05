@@ -169,8 +169,8 @@ void BoxApp::BuildBoxGeometry()
     CopyMemory(mBoxGeo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
 
     // copy data to gpu
-    mBoxGeo->VertexBufferGPU = D3dUtil::CreateDefaultBuffer(mD3dDevice.Get(), mCommandList.Get(), vertices.data(), vbByteSize, mBoxGeo->VertexBufferUploader);
-    mBoxGeo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(mD3dDevice.Get(), mCommandList.Get(), indices.data(), ibByteSize, mBoxGeo->IndexBufferUploader);
+    mBoxGeo->VertexBufferGPU = D3dUtil::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), vertices.data(), vbByteSize, mBoxGeo->VertexBufferUploader);
+    mBoxGeo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), indices.data(), ibByteSize, mBoxGeo->IndexBufferUploader);
 
     mBoxGeo->VertexByteStride = sizeof(BoxVertex);
     mBoxGeo->VertexBufferByteSize = vbByteSize;
@@ -193,12 +193,12 @@ void BoxApp::BuildConstantBufferViewHeap()
     cbvHeapDesc.NodeMask = 0;
     cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-    ThrowIfFailed(mD3dDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&mCbvHeap)));
+    ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&mCbvHeap)));
 }
 
 void BoxApp::BuildConstantBuffersAndView()
 {
-    mConstantBuffer = std::make_unique<UploadBuffer<BoxObjectConstants>>(mD3dDevice.Get(), 1, true);
+    mConstantBuffer = std::make_unique<UploadBuffer<BoxObjectConstants>>(md3dDevice.Get(), 1, true);
 
     D3D12_GPU_VIRTUAL_ADDRESS cbAddress = mConstantBuffer->GetResource()->GetGPUVirtualAddress();
     UINT boxConstantIndex = 0;
@@ -208,7 +208,7 @@ void BoxApp::BuildConstantBuffersAndView()
     cbvDesc.BufferLocation = cbAddress;
     cbvDesc.SizeInBytes = mConstantBuffer->GetElementByteSize();
 
-    mD3dDevice->CreateConstantBufferView(&cbvDesc, mCbvHeap->GetCPUDescriptorHandleForHeapStart());
+    md3dDevice->CreateConstantBufferView(&cbvDesc, mCbvHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
 void BoxApp::BuildShadersAndInputLayout()
@@ -256,7 +256,7 @@ void BoxApp::BuildRootSignature()
     }
     ThrowIfFailed(hr);
 
-    ThrowIfFailed(mD3dDevice->CreateRootSignature(
+    ThrowIfFailed(md3dDevice->CreateRootSignature(
         0,
         serializedRootSig->GetBufferPointer(),
         serializedRootSig->GetBufferSize(),
@@ -281,5 +281,5 @@ void BoxApp::BuildPSO()
     psoDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
     psoDesc.SampleDesc.Quality = m4xMsaaState ? m4xMsaaQuality - 1 : 0;
     psoDesc.DSVFormat = mDepthStencilFormat;
-    ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSO)));
+    ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSO)));
 }

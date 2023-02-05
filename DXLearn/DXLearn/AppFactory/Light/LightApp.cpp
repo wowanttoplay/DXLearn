@@ -132,7 +132,7 @@ void LightApp::BuildRootSignature()
     }
     ThrowIfFailed(hr);
 
-    ThrowIfFailed(mD3dDevice->CreateRootSignature(
+    ThrowIfFailed(md3dDevice->CreateRootSignature(
         0,
         serializedRootSig->GetBufferPointer(),
         serializedRootSig->GetBufferSize(),
@@ -317,7 +317,7 @@ void LightApp::BuildFrameResources()
 {
     for (int i = 0; i < gNumFrameResources; ++i)
     {
-        mFrameResources.emplace_back(std::make_shared<LightFrameResource>(mD3dDevice.Get(),
+        mFrameResources.emplace_back(std::make_shared<LightFrameResource>(md3dDevice.Get(),
             1,
             static_cast<UINT>(mAllRitems.size()),
             static_cast<UINT>(mMaterials.size())
@@ -353,12 +353,12 @@ void LightApp::BuildPSOs()
     opaquePsoDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
     opaquePsoDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
     opaquePsoDesc.DSVFormat = mDepthStencilFormat;
-    ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs[EPSoType::Opaque])));
+    ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs[EPSoType::Opaque])));
 
     // Opaque wire Pso
     D3D12_GRAPHICS_PIPELINE_STATE_DESC opaqueWirePsoDesc = opaquePsoDesc;
     opaqueWirePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
-    ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&opaqueWirePsoDesc, IID_PPV_ARGS(&mPSOs[EPSoType::Opaque_wire])));
+    ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&opaqueWirePsoDesc, IID_PPV_ARGS(&mPSOs[EPSoType::Opaque_wire])));
 }
 
 void LightApp::OnKeyboardInput(const GameTimer& InGameTime)
@@ -594,10 +594,10 @@ void LightApp::BuildShapeGeometry()
     ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
     CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
 
-    geo->VertexBufferGPU = D3dUtil::CreateDefaultBuffer(mD3dDevice.Get(),
+    geo->VertexBufferGPU = D3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
         mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
 
-    geo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(mD3dDevice.Get(),
+    geo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
         mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
 
     geo->VertexByteStride = sizeof(Vertex);
@@ -666,10 +666,10 @@ void LightApp::BuildSkullGeometry()
     ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
     CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
 
-    geo->VertexBufferGPU = D3dUtil::CreateDefaultBuffer(mD3dDevice.Get(),
+    geo->VertexBufferGPU = D3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
         mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
 
-    geo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(mD3dDevice.Get(),
+    geo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
         mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
 
     geo->VertexByteStride = sizeof(Vertex);

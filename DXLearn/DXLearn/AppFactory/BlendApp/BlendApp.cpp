@@ -165,7 +165,7 @@ void BlendApp::BuildFrameResources()
     for (int i = 0; i < gNumFrameResources; ++i)
     {
         mFrameResources.push_back(make_shared<BlendFrameResource>(
-            mD3dDevice.Get(),
+            md3dDevice.Get(),
             1,
             static_cast<UINT>(mAllRitems.size()),
             static_cast<UINT>(mMaterials.size()),
@@ -207,7 +207,7 @@ void BlendApp::BuildDescriptorHeaps()
     srvHeapDesc.NumDescriptors = 3;
     srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-    ThrowIfFailed(mD3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvheap)));
+    ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvheap)));
 
     CD3DX12_CPU_DESCRIPTOR_HANDLE hDesc(mSrvheap->GetCPUDescriptorHandleForHeapStart());
 
@@ -221,15 +221,15 @@ void BlendApp::BuildDescriptorHeaps()
     srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
     srvDesc.Texture2D.MostDetailedMip = 0;
     srvDesc.Texture2D.MipLevels = -1;
-    mD3dDevice->CreateShaderResourceView(grassTex.Get(), &srvDesc, hDesc);
+    md3dDevice->CreateShaderResourceView(grassTex.Get(), &srvDesc, hDesc);
 
     hDesc.Offset(1, mCbvHandleSize);
     srvDesc.Format = waterTex->GetDesc().Format;
-    mD3dDevice->CreateShaderResourceView(waterTex.Get(), &srvDesc, hDesc);
+    md3dDevice->CreateShaderResourceView(waterTex.Get(), &srvDesc, hDesc);
 
     hDesc.Offset(1, mCbvHandleSize);
     srvDesc.Format = fenceTex->GetDesc().Format;
-    mD3dDevice->CreateShaderResourceView(fenceTex.Get(), &srvDesc, hDesc);
+    md3dDevice->CreateShaderResourceView(fenceTex.Get(), &srvDesc, hDesc);
 }
 
 void BlendApp::BuildTextures()
@@ -237,21 +237,21 @@ void BlendApp::BuildTextures()
     auto grassTex = std::make_unique<Texture>();
     grassTex->Name = "grassTex";
     grassTex->Filename = L"AppFactory/Textures/grass.dds";
-    ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(mD3dDevice.Get(),
+    ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
         mCommandList.Get(), grassTex->Filename.c_str(),
         grassTex->Resource, grassTex->UploadHeap));
 
     auto waterTex = std::make_unique<Texture>();
     waterTex->Name = "waterTex";
     waterTex->Filename = L"AppFactory/Textures/water1.dds";
-    ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(mD3dDevice.Get(),
+    ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
         mCommandList.Get(), waterTex->Filename.c_str(),
         waterTex->Resource, waterTex->UploadHeap));
 
     auto fenceTex = std::make_unique<Texture>();
     fenceTex->Name = "fenceTex";
     fenceTex->Filename = L"AppFactory/Textures/WireFence.dds";
-    ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(mD3dDevice.Get(),
+    ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
         mCommandList.Get(), fenceTex->Filename.c_str(),
         fenceTex->Resource, fenceTex->UploadHeap));
 
@@ -286,7 +286,7 @@ void BlendApp::BuildPSOs()
     opaquePsoDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
     opaquePsoDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
     opaquePsoDesc.DSVFormat = mDepthStencilFormat;
-    ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs[EPSoType::Opaque])));
+    ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs[EPSoType::Opaque])));
 
     //PSO for alpah test
     D3D12_GRAPHICS_PIPELINE_STATE_DESC alphaTestPsoDesc = opaquePsoDesc;
@@ -296,7 +296,7 @@ void BlendApp::BuildPSOs()
         mShaders["alphaTestedPS"]->GetBufferSize()
     };
     alphaTestPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-    ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&alphaTestPsoDesc, IID_PPV_ARGS(&mPSOs[EPSoType::AlphaTest])));
+    ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&alphaTestPsoDesc, IID_PPV_ARGS(&mPSOs[EPSoType::AlphaTest])));
 
     // PSO for transparent objects
 
@@ -314,7 +314,7 @@ void BlendApp::BuildPSOs()
     blendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
     transparentPsoDesc.BlendState.RenderTarget[0] = blendDesc;
-    ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&transparentPsoDesc, IID_PPV_ARGS(&mPSOs[EPSoType::Translucent])));
+    ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&transparentPsoDesc, IID_PPV_ARGS(&mPSOs[EPSoType::Translucent])));
 }
 
 void BlendApp::UpdateMainPassCB(const GameTimer& InGameTime)
@@ -537,10 +537,10 @@ std::unique_ptr<MeshGeometry> BlendApp::BuildLandGeometry()
     ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
     CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
 
-    geo->VertexBufferGPU = D3dUtil::CreateDefaultBuffer(mD3dDevice.Get(),
+    geo->VertexBufferGPU = D3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
         mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
 
-    geo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(mD3dDevice.Get(),
+    geo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
         mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
 
     geo->VertexByteStride = sizeof(Vertex);
@@ -596,7 +596,7 @@ std::unique_ptr<MeshGeometry> BlendApp::BuildWaveGeometry()
     ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
     CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
 
-    geo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(mD3dDevice.Get(),
+    geo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
         mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
 
     geo->VertexByteStride = sizeof(Vertex);
@@ -641,10 +641,10 @@ std::unique_ptr<MeshGeometry> BlendApp::BuildBoxGeometry()
     ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
     CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
 
-    geo->VertexBufferGPU = D3dUtil::CreateDefaultBuffer(mD3dDevice.Get(),
+    geo->VertexBufferGPU = D3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
         mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
 
-    geo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(mD3dDevice.Get(),
+    geo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
         mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
 
     geo->VertexByteStride = sizeof(Vertex);

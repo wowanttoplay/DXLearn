@@ -141,26 +141,26 @@ void StencilApp::BuildTextures()
     auto bricksTex = make_unique<Texture>();
     bricksTex->Name = "bricksTex";
     bricksTex->Filename = FileManager::GetTextureFullPath("bricks3.dds");
-    ThrowIfFailed(CreateDDSTextureFromFile12(mD3dDevice.Get(), mCommandList.Get(), bricksTex->Filename.c_str(), bricksTex->Resource, bricksTex->UploadHeap));
+    ThrowIfFailed(CreateDDSTextureFromFile12(md3dDevice.Get(), mCommandList.Get(), bricksTex->Filename.c_str(), bricksTex->Resource, bricksTex->UploadHeap));
 
     auto checkboardTex = std::make_unique<Texture>();
     checkboardTex->Name = "checkboardTex";
     checkboardTex->Filename = FileManager::GetTextureFullPath("checkboard.dds");
-    ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(mD3dDevice.Get(),
+    ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
         mCommandList.Get(), checkboardTex->Filename.c_str(),
         checkboardTex->Resource, checkboardTex->UploadHeap));
 
     auto iceTex = std::make_unique<Texture>();
     iceTex->Name = "iceTex";
     iceTex->Filename = FileManager::GetTextureFullPath("ice.dds");
-    ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(mD3dDevice.Get(),
+    ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
         mCommandList.Get(), iceTex->Filename.c_str(),
         iceTex->Resource, iceTex->UploadHeap));
 
     auto white1x1Tex = std::make_unique<Texture>();
     white1x1Tex->Name = "white1x1Tex";
     white1x1Tex->Filename = FileManager::GetTextureFullPath("white1x1.dds");
-    ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(mD3dDevice.Get(),
+    ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
         mCommandList.Get(), white1x1Tex->Filename.c_str(),
         white1x1Tex->Resource, white1x1Tex->UploadHeap));
 
@@ -179,7 +179,7 @@ void StencilApp::BuildDescriptorHeaps()
 	srvHeapDesc.NumDescriptors = 4;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	ThrowIfFailed(mD3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvheap)));
+	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvheap)));
 
 	//
 	// Fill out the heap with actual descriptors.
@@ -197,25 +197,25 @@ void StencilApp::BuildDescriptorHeaps()
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MostDetailedMip = 0;
 	srvDesc.Texture2D.MipLevels = -1;
-	mD3dDevice->CreateShaderResourceView(bricksTex.Get(), &srvDesc, hDescriptor);
+	md3dDevice->CreateShaderResourceView(bricksTex.Get(), &srvDesc, hDescriptor);
 
 	// next descriptor
 	hDescriptor.Offset(1, mCbvHandleSize);
 
 	srvDesc.Format = checkboardTex->GetDesc().Format;
-	mD3dDevice->CreateShaderResourceView(checkboardTex.Get(), &srvDesc, hDescriptor);
+	md3dDevice->CreateShaderResourceView(checkboardTex.Get(), &srvDesc, hDescriptor);
 
 	// next descriptor
 	hDescriptor.Offset(1, mCbvHandleSize);
 
 	srvDesc.Format = iceTex->GetDesc().Format;
-	mD3dDevice->CreateShaderResourceView(iceTex.Get(), &srvDesc, hDescriptor);
+	md3dDevice->CreateShaderResourceView(iceTex.Get(), &srvDesc, hDescriptor);
 
 	// next descriptor
 	hDescriptor.Offset(1, mCbvHandleSize);
 
 	srvDesc.Format = white1x1Tex->GetDesc().Format;
-	mD3dDevice->CreateShaderResourceView(white1x1Tex.Get(), &srvDesc, hDescriptor);
+	md3dDevice->CreateShaderResourceView(white1x1Tex.Get(), &srvDesc, hDescriptor);
 }
 
 void StencilApp::BuildRenderItems()
@@ -297,7 +297,7 @@ void StencilApp::BuildFrameResources()
 	for (int i = 0; i < gNumFrameResources; ++i)
 	{
 		mFrameResources.push_back(std::make_shared<BlendFrameResource>(
-			mD3dDevice.Get(), 2,
+			md3dDevice.Get(), 2,
 			static_cast<UINT>(mAllRitems.size()),
 			static_cast<UINT>(mMaterials.size()),
 			mWaves->VertexCount()));
@@ -334,7 +334,7 @@ void StencilApp::BuildPSOs()
 	opaquePsoDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
 	opaquePsoDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
 	opaquePsoDesc.DSVFormat = mDepthStencilFormat;
-	ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs[EPSoType::Opaque])));
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs[EPSoType::Opaque])));
 
 	//
 	// PSO for transparent objects
@@ -354,7 +354,7 @@ void StencilApp::BuildPSOs()
 	translucentBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
 	translucentDesc.BlendState.RenderTarget[0] = translucentBlendDesc;
-	ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&translucentDesc, IID_PPV_ARGS(&mPSOs[EPSoType::Translucent])));
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&translucentDesc, IID_PPV_ARGS(&mPSOs[EPSoType::Translucent])));
 
 	//
 	//	PSO for marking stencil mirrors
@@ -367,7 +367,7 @@ void StencilApp::BuildPSOs()
 		D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS);
 
 	markStencilPsoDesc.DepthStencilState = mirrorsDesc;
-	ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&markStencilPsoDesc, IID_PPV_ARGS(&mPSOs[EPSoType::MarkStencil])));
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&markStencilPsoDesc, IID_PPV_ARGS(&mPSOs[EPSoType::MarkStencil])));
 
 	//
 	//	PSO for stencil reflections
@@ -380,7 +380,7 @@ void StencilApp::BuildPSOs()
 	stencilFilerPsoDesc.DepthStencilState = filterDesc;
 	stencilFilerPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_FRONT;
 	stencilFilerPsoDesc.RasterizerState.FrontCounterClockwise = true;
-	ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&stencilFilerPsoDesc, IID_PPV_ARGS(&mPSOs[EPSoType::StencilFilter])));
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&stencilFilerPsoDesc, IID_PPV_ARGS(&mPSOs[EPSoType::StencilFilter])));
 
 	
 	//
@@ -391,7 +391,7 @@ void StencilApp::BuildPSOs()
 		D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_INCR,D3D12_COMPARISON_FUNC_EQUAL,
 		D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_INCR, D3D12_COMPARISON_FUNC_EQUAL);
 	shadowPsoDesc.DepthStencilState = shadowDesc;
-	ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&shadowPsoDesc, IID_PPV_ARGS(&mPSOs[EPSoType::TranslucentShadow])));
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&shadowPsoDesc, IID_PPV_ARGS(&mPSOs[EPSoType::TranslucentShadow])));
 }
 
 void StencilApp::AnimateMaterials(const GameTimer& InGameTime)
@@ -500,10 +500,10 @@ void StencilApp::BuildRoomGeometry()
 	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
 	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
 
-	geo->VertexBufferGPU = D3dUtil::CreateDefaultBuffer(mD3dDevice.Get(),
+	geo->VertexBufferGPU = D3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
 		mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
 
-	geo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(mD3dDevice.Get(),
+	geo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
 		mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
 
 	geo->VertexByteStride = sizeof(Vertex);
