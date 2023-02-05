@@ -36,6 +36,7 @@ protected:
     virtual void UpdateMainPassCB(const GameTimer& InGameTime);
 protected:
     virtual void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& rItems);
+    
 
 protected:
     Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature = nullptr;

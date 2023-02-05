@@ -545,7 +545,7 @@ void LightApp::BuildShapeGeometry()
         sphere.Vertices.size() +
         cylinder.Vertices.size();
 
-    std::vector<LightVertex> vertices(totalVertexCount);
+    std::vector<Vertex> vertices(totalVertexCount);
 
     UINT k = 0;
     for(size_t i = 0; i < box.Vertices.size(); ++i, ++k)
@@ -582,7 +582,7 @@ void LightApp::BuildShapeGeometry()
     indices.insert(indices.end(), std::begin(sphere.GetIndices16()), std::end(sphere.GetIndices16()));
     indices.insert(indices.end(), std::begin(cylinder.GetIndices16()), std::end(cylinder.GetIndices16()));
 
-    const UINT vbByteSize = (UINT)vertices.size() * sizeof(LightVertex);
+    const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
     const UINT ibByteSize = (UINT)indices.size()  * sizeof(std::uint16_t);
 
     auto geo = std::make_unique<MeshGeometry>();
@@ -600,7 +600,7 @@ void LightApp::BuildShapeGeometry()
     geo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(mD3dDevice.Get(),
         mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
 
-    geo->VertexByteStride = sizeof(LightVertex);
+    geo->VertexByteStride = sizeof(Vertex);
     geo->VertexBufferByteSize = vbByteSize;
     geo->IndexFormat = DXGI_FORMAT_R16_UINT;
     geo->IndexBufferByteSize = ibByteSize;
@@ -630,7 +630,7 @@ void LightApp::BuildSkullGeometry()
     fin >> ignore >> tcount;
     fin >> ignore >> ignore >> ignore >> ignore;
 
-    std::vector<LightVertex> vertices(vcount);
+    std::vector<Vertex> vertices(vcount);
     for(UINT i = 0; i < vcount; ++i)
     {
         fin >> vertices[i].Pos.x >> vertices[i].Pos.y >> vertices[i].Pos.z;
@@ -653,7 +653,7 @@ void LightApp::BuildSkullGeometry()
     // Pack the indices of all the meshes into one index buffer.
     //
 
-    const UINT vbByteSize = (UINT)vertices.size() * sizeof(LightVertex);
+    const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
 
     const UINT ibByteSize = (UINT)indices.size() * sizeof(std::int32_t);
 
@@ -672,7 +672,7 @@ void LightApp::BuildSkullGeometry()
     geo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(mD3dDevice.Get(),
         mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
 
-    geo->VertexByteStride = sizeof(LightVertex);
+    geo->VertexByteStride = sizeof(Vertex);
     geo->VertexBufferByteSize = vbByteSize;
     geo->IndexFormat = DXGI_FORMAT_R32_UINT;
     geo->IndexBufferByteSize = ibByteSize;
