@@ -31,7 +31,8 @@ protected:
     void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& rItems) override;
     void AnimateMaterials(const GameTimer& InGameTime) override;
 
-    void UpdateWaves(const GameTimer& InGameTime);
+    virtual void UpdateWaves(const GameTimer& InGameTime);
+    
 
 
     std::unique_ptr<MeshGeometry> BuildLandGeometry();

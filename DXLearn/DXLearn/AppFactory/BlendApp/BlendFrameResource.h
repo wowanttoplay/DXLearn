@@ -17,7 +17,7 @@ class BlendFrameResource : public FrameResource
 public:
     BlendFrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount, UINT WaveCount);
 
-    std::unique_ptr<UploadBuffer<LightVertex>> WavesVB = nullptr;
+    std::unique_ptr<UploadBuffer<Vertex>> WavesVB = nullptr;
     std::unique_ptr<UploadBuffer<BlendPassConstants>> PassCB = nullptr;
     std::unique_ptr<UploadBuffer<MaterialConstants>> MaterialCB = nullptr;
     std::unique_ptr<UploadBuffer<LightObjectConstants>> ObjectCB = nullptr;

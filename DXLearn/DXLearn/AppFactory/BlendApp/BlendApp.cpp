@@ -2,6 +2,7 @@
 
 #include "BlendFrameResource.h"
 #include "../../Common/DDSTextureLoader.h"
+#include "../../Common/FileManager.h"
 #include "../../Common/GeometryGenerator.h"
 
 using namespace std;
@@ -187,7 +188,7 @@ void BlendApp::BuildShadersAndInputLayout()
         NULL, NULL
     };
     
-    wstring shaderPath = TEXT(SHADER_PATH "blendShader.hlsl");
+    wstring shaderPath = FileManager::GetShaderFullPath("blendShader.hlsl");
     mShaders["standardVS"] = D3dUtil::CompileShader(shaderPath, nullptr, "VS", "vs_5_0");
     mShaders["opaquePS"] = D3dUtil::CompileShader(shaderPath, fogDefine, "PS", "ps_5_0");
     mShaders["alphaTestedPS"] = D3dUtil::CompileShader(shaderPath, alphaTestDefine, "PS", "ps_5_0");
@@ -484,7 +485,7 @@ void BlendApp::UpdateWaves(const GameTimer& InGameTime)
     auto currWavesVB = dynamic_pointer_cast<BlendFrameResource>(mCurrFrameResource)->WavesVB.get();
     for(int i = 0; i < mWaves->VertexCount(); ++i)
     {
-        LightVertex v;
+        Vertex v;
 
         v.Pos = mWaves->Position(i);
         v.Normal = mWaves->Normal(i);
@@ -512,7 +513,7 @@ std::unique_ptr<MeshGeometry> BlendApp::BuildLandGeometry()
     // sandy looking beaches, grassy low hills, and snow mountain peaks.
     //
 
-    std::vector<LightVertex> vertices(grid.Vertices.size());
+    std::vector<Vertex> vertices(grid.Vertices.size());
     for(size_t i = 0; i < grid.Vertices.size(); ++i)
     {
         auto& p = grid.Vertices[i].Position;
@@ -522,7 +523,7 @@ std::unique_ptr<MeshGeometry> BlendApp::BuildLandGeometry()
         vertices[i].TexC = grid.Vertices[i].TexC;
     }
 
-    const UINT vbByteSize = (UINT)vertices.size() * sizeof(LightVertex);
+    const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
 
     std::vector<std::uint16_t> indices = grid.GetIndices16();
     const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
@@ -542,7 +543,7 @@ std::unique_ptr<MeshGeometry> BlendApp::BuildLandGeometry()
     geo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(mD3dDevice.Get(),
         mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
 
-    geo->VertexByteStride = sizeof(LightVertex);
+    geo->VertexByteStride = sizeof(Vertex);
     geo->VertexBufferByteSize = vbByteSize;
     geo->IndexFormat = DXGI_FORMAT_R16_UINT;
     geo->IndexBufferByteSize = ibByteSize;
@@ -582,7 +583,7 @@ std::unique_ptr<MeshGeometry> BlendApp::BuildWaveGeometry()
         }
     }
 
-    UINT vbByteSize = mWaves->VertexCount()*sizeof(LightVertex);
+    UINT vbByteSize = mWaves->VertexCount()*sizeof(Vertex);
     UINT ibByteSize = (UINT)indices.size()*sizeof(std::uint16_t);
 
     auto geo = std::make_unique<MeshGeometry>();
@@ -598,7 +599,7 @@ std::unique_ptr<MeshGeometry> BlendApp::BuildWaveGeometry()
     geo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(mD3dDevice.Get(),
         mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
 
-    geo->VertexByteStride = sizeof(LightVertex);
+    geo->VertexByteStride = sizeof(Vertex);
     geo->VertexBufferByteSize = vbByteSize;
     geo->IndexFormat = DXGI_FORMAT_R16_UINT;
     geo->IndexBufferByteSize = ibByteSize;
@@ -617,7 +618,7 @@ std::unique_ptr<MeshGeometry> BlendApp::BuildBoxGeometry()
     GeometryGenerator geoGen;
     GeometryGenerator::MeshData box = geoGen.CreateBox(8.0f, 8.0f, 8.0f, 3);
 
-    std::vector<LightVertex> vertices(box.Vertices.size());
+    std::vector<Vertex> vertices(box.Vertices.size());
     for (size_t i = 0; i < box.Vertices.size(); ++i)
     {
         auto& p = box.Vertices[i].Position;
@@ -626,7 +627,7 @@ std::unique_ptr<MeshGeometry> BlendApp::BuildBoxGeometry()
         vertices[i].TexC = box.Vertices[i].TexC;
     }
 
-    const UINT vbByteSize = (UINT)vertices.size() * sizeof(LightVertex);
+    const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
 
     std::vector<std::uint16_t> indices = box.GetIndices16();
     const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
@@ -646,7 +647,7 @@ std::unique_ptr<MeshGeometry> BlendApp::BuildBoxGeometry()
     geo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(mD3dDevice.Get(),
         mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
 
-    geo->VertexByteStride = sizeof(LightVertex);
+    geo->VertexByteStride = sizeof(Vertex);
     geo->VertexBufferByteSize = vbByteSize;
     geo->IndexFormat = DXGI_FORMAT_R16_UINT;
     geo->IndexBufferByteSize = ibByteSize;
