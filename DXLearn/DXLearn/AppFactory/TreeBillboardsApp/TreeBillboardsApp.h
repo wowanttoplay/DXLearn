@@ -18,5 +18,19 @@ protected:
     
     void BuildTextures() override;
     void BuildDescriptorHeaps() override;
+    void BuildMaterials() override;
+
+    void BuildShadersAndInputLayout() override;
+
+    void BuildGeometry() override;
+    void BuildRenderItems() override;
+
+    void BuildPSOs() override;
+
+
+    std::map<std::string, std::vector<D3D12_INPUT_ELEMENT_DESC>> mInputLayouts;
+
+protected:
+    std::unique_ptr<MeshGeometry> BuildTreeSpriteGeometry();
 };
 

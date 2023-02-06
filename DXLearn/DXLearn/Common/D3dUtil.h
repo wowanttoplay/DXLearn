@@ -24,6 +24,7 @@ enum class EPSoType : int
 	MarkStencil,
 	StencilFilter,
 	TranslucentShadow,
+	TreeSprite,
 	Count
 };
 
