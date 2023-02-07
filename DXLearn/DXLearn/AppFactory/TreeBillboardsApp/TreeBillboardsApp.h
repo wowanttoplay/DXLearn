@@ -13,6 +13,7 @@ public:
     TreeBillboardsApp(const TreeBillboardsApp& other) = delete;
     TreeBillboardsApp& operator=(const TreeBillboardsApp& other) = delete;
     virtual ~TreeBillboardsApp() = default;
+    void Draw(const GameTimer& InGameTime) override;
 
 protected:
     
@@ -26,6 +27,7 @@ protected:
     void BuildRenderItems() override;
 
     void BuildPSOs() override;
+    
 
 
     std::map<std::string, std::vector<D3D12_INPUT_ELEMENT_DESC>> mInputLayouts;
