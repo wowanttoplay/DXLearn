@@ -165,11 +165,14 @@
     <ClCompile Include="AppFactory\Light\LightFrameResource.cpp" />
     <ClCompile Include="AppFactory\ShapesApp\ShapesApp.cpp" />
     <ClCompile Include="AppFactory\ShapesApp\ShapesFrameResource.cpp" />
+    <ClCompile Include="AppFactory\StencilApp\StencilApp.cpp" />
     <ClCompile Include="AppFactory\Texture\TextureApp.cpp" />
+    <ClCompile Include="AppFactory\TreeBillboardsApp\TreeBillboardsApp.cpp" />
     <ClCompile Include="Common\BaseWindow.cpp" />
     <ClCompile Include="Common\D3dApp.cpp" />
     <ClCompile Include="Common\D3dUtil.cpp" />
     <ClCompile Include="Common\DDSTextureLoader.cpp" />
+    <ClCompile Include="Common\FileManager.cpp" />
     <ClCompile Include="Common\FrameResource.cpp">
       <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -334,12 +337,15 @@
     <ClInclude Include="AppFactory\Light\LightFrameResource.h" />
     <ClInclude Include="AppFactory\ShapesApp\ShapesApp.h" />
     <ClInclude Include="AppFactory\ShapesApp\ShapesFrameResource.h" />
+    <ClInclude Include="AppFactory\StencilApp\StencilApp.h" />
     <ClInclude Include="AppFactory\Texture\TextureApp.h" />
+    <ClInclude Include="AppFactory\TreeBillboardsApp\TreeBillboardsApp.h" />
     <ClInclude Include="Common\BaseWindow.h" />
     <ClInclude Include="Common\D3dApp.h" />
     <ClInclude Include="Common\D3dUtil.h" />
     <ClInclude Include="Common\d3dx12.h" />
     <ClInclude Include="Common\DDSTextureLoader.h" />
+    <ClInclude Include="Common\FileManager.h" />
     <ClInclude Include="Common\FrameResource.h" />
     <ClInclude Include="Common\GameTimer.h" />
     <ClInclude Include="Common\GeometryGenerator.h" />

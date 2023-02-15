@@ -81,7 +81,7 @@ void TextureApp::BuildRootSignature()
     }
     ThrowIfFailed(hr);
 
-    ThrowIfFailed(mD3dDevice->CreateRootSignature(
+    ThrowIfFailed(md3dDevice->CreateRootSignature(
     0,
     serializedRootSig->GetBufferPointer(),
     serializedRootSig->GetBufferSize(),
@@ -109,7 +109,7 @@ void TextureApp::BuildDescriptorHeaps()
     srvHeapDesc.NumDescriptors = 4;
     srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-    ThrowIfFailed(mD3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvheap)));
+    ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvheap)));
 
     // Fill the srv heap by texture desc
     CD3DX12_CPU_DESCRIPTOR_HANDLE hDesc(mSrvheap->GetCPUDescriptorHandleForHeapStart());
@@ -126,22 +126,22 @@ void TextureApp::BuildDescriptorHeaps()
     srvDesc.Texture2D.MipLevels = bricksTex->GetDesc().MipLevels;
     srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 
-    mD3dDevice->CreateShaderResourceView(bricksTex.Get(), &srvDesc, hDesc);
+    md3dDevice->CreateShaderResourceView(bricksTex.Get(), &srvDesc, hDesc);
 
     hDesc.Offset(1, mCbvHandleSize);
     srvDesc.Format = stoneTex->GetDesc().Format;
     srvDesc.Texture2D.MipLevels = stoneTex->GetDesc().MipLevels;
-    mD3dDevice->CreateShaderResourceView(stoneTex.Get(), &srvDesc, hDesc);
+    md3dDevice->CreateShaderResourceView(stoneTex.Get(), &srvDesc, hDesc);
     
     hDesc.Offset(1, mCbvHandleSize);
     srvDesc.Format = tileTex->GetDesc().Format;
     srvDesc.Texture2D.MipLevels = tileTex->GetDesc().MipLevels;
-    mD3dDevice->CreateShaderResourceView(tileTex.Get(), &srvDesc, hDesc);
+    md3dDevice->CreateShaderResourceView(tileTex.Get(), &srvDesc, hDesc);
 
     hDesc.Offset(1, mCbvHandleSize);
     srvDesc.Format = skullTex->GetDesc().Format;
     srvDesc.Texture2D.MipLevels = skullTex->GetDesc().MipLevels;
-    mD3dDevice->CreateShaderResourceView(skullTex.Get(), &srvDesc, hDesc);
+    md3dDevice->CreateShaderResourceView(skullTex.Get(), &srvDesc, hDesc);
 }
 
 void TextureApp::BuildTextures()
@@ -149,28 +149,28 @@ void TextureApp::BuildTextures()
     auto bricksTex = std::make_unique<Texture>();
     bricksTex->Name = "bricksTex";
     bricksTex->Filename = TEXT("AppFactory/Textures/bricks.dds");
-    ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(mD3dDevice.Get(),
+    ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
         mCommandList.Get(), bricksTex->Filename.c_str(),
         bricksTex->Resource, bricksTex->UploadHeap));
 
     auto stoneTex = std::make_unique<Texture>();
     stoneTex->Name = "stoneTex";
     stoneTex->Filename = TEXT("AppFactory/Textures/stone.dds");
-    ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(mD3dDevice.Get(),
+    ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
         mCommandList.Get(), stoneTex->Filename.c_str(),
         stoneTex->Resource, stoneTex->UploadHeap));
 
     auto tileTex = std::make_unique<Texture>();
     tileTex->Name = "tileTex";
     tileTex->Filename = TEXT("AppFactory/Textures/tile.dds");
-    ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(mD3dDevice.Get(),
+    ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
         mCommandList.Get(), tileTex->Filename.c_str(),
         tileTex->Resource, tileTex->UploadHeap));
 
     auto skullTex = std::make_unique<Texture>();
     skullTex->Name = "skullTex";
     skullTex->Filename = TEXT("AppFactory/Textures/ice.dds");
-    ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(mD3dDevice.Get(),
+    ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
         mCommandList.Get(), skullTex->Filename.c_str(),
         skullTex->Resource, skullTex->UploadHeap));
 

@@ -128,7 +128,7 @@ void LandAndWavesApp::BuildRootSignature()
    }
    ThrowIfFailed(hr);
 
-   ThrowIfFailed(mD3dDevice->CreateRootSignature(
+   ThrowIfFailed(md3dDevice->CreateRootSignature(
       0,
       serializedRootSig->GetBufferPointer(),
       serializedRootSig->GetBufferSize(),
@@ -203,8 +203,8 @@ void LandAndWavesApp::BuildLandGeometry()
    ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
    CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
 
-   geo->VertexBufferGPU = D3dUtil::CreateDefaultBuffer(mD3dDevice.Get(), mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
-   geo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(mD3dDevice.Get(), mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
+   geo->VertexBufferGPU = D3dUtil::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
+   geo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
 
    geo->VertexByteStride = sizeof(LWVertex);
    geo->VertexBufferByteSize = vbByteSize;
@@ -258,7 +258,7 @@ void LandAndWavesApp::BuildWaveGeomtry()
    ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
    CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
 
-   geo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(mD3dDevice.Get(),
+   geo->IndexBufferGPU = D3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
       mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
 
    geo->VertexByteStride = sizeof(LWVertex);
@@ -311,7 +311,7 @@ void LandAndWavesApp::BuildFrameResource()
 {
    for (int i = 0; i < gNumFrameResources; ++i)
    {
-      mFrameResources.push_back(std::make_unique<LWFrameResource>(mD3dDevice.Get(), 1, static_cast<UINT>(mAllRenderItems.size()), mWaves->VertexCount()));
+      mFrameResources.push_back(std::make_unique<LWFrameResource>(md3dDevice.Get(), 1, static_cast<UINT>(mAllRenderItems.size()), mWaves->VertexCount()));
    }
 }
 
@@ -346,12 +346,12 @@ void LandAndWavesApp::BuildPSO()
    opaquePsoDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
    opaquePsoDesc.DSVFormat = mDepthStencilFormat;
    
-   ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs["opaque"])));
+   ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs["opaque"])));
 
    // PSO for opaque wireframe objects
    D3D12_GRAPHICS_PIPELINE_STATE_DESC opaqueWireframePsoDesc = opaquePsoDesc;
    opaqueWireframePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
-   ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&opaqueWireframePsoDesc, IID_PPV_ARGS(&mPSOs["opaque_wireframe"])));
+   ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&opaqueWireframePsoDesc, IID_PPV_ARGS(&mPSOs["opaque_wireframe"])));
 }
 
 void LandAndWavesApp::OnKeyboardInput(const GameTimer& gt)

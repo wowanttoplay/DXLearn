@@ -92,7 +92,7 @@ LRESULT D3dApp::MSgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     case WM_SIZE:
         mClientWidth = LOWORD(lParam);
         mClientHeight = HIWORD(lParam);
-        if (mD3dDevice)
+        if (md3dDevice)
         {
             if (wParam == SIZE_MINIMIZED)
             {
@@ -285,13 +285,13 @@ void D3dApp::BuildDXGIFactory()
 void D3dApp::BuildD3DDevice()
 {
     // Try to create hardware devcie
-    HRESULT hardwareResult = D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&mD3dDevice));
+    HRESULT hardwareResult = D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&md3dDevice));
     // Fallback to WARP devcie
     if (FAILED(hardwareResult))
     {
         ComPtr<IDXGIAdapter> pWarpAdapter;
         ThrowIfFailed(mDxgiFactory->EnumWarpAdapter(IID_PPV_ARGS(&pWarpAdapter)));
-        ThrowIfFailed(D3D12CreateDevice(pWarpAdapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&mD3dDevice)));
+        ThrowIfFailed(D3D12CreateDevice(pWarpAdapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&md3dDevice)));
     }
 #ifdef _DEBUG
     LogAdapters();
@@ -300,14 +300,14 @@ void D3dApp::BuildD3DDevice()
 
 void D3dApp::BuildFence()
 {
-    ThrowIfFailed(mD3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
+    ThrowIfFailed(md3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
 }
 
 void D3dApp::InitDescHandleSize()
 {
-    mRtvDescHandleSize = mD3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-    mDscDescHandleSize = mD3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-    mCbvHandleSize = mD3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    mRtvDescHandleSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+    mDscDescHandleSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+    mCbvHandleSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 }
 
 void D3dApp::InitMsaaState()
@@ -318,7 +318,7 @@ void D3dApp::InitMsaaState()
     msQualityLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
     msQualityLevels.NumQualityLevels = 0;
 
-    ThrowIfFailed(mD3dDevice->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msQualityLevels, sizeof(msQualityLevels)));
+    ThrowIfFailed(md3dDevice->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msQualityLevels, sizeof(msQualityLevels)));
 
     m4xMsaaQuality = msQualityLevels.NumQualityLevels;
     assert(m4xMsaaQuality > 0);
@@ -330,13 +330,13 @@ void D3dApp::CreateCommandObjects()
     D3D12_COMMAND_QUEUE_DESC queueDesc = {};
     queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
     queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-    ThrowIfFailed(mD3dDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mCommandQueue)));
+    ThrowIfFailed(md3dDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mCommandQueue)));
 
     // create command allocator
-    ThrowIfFailed(mD3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&mCommandAlloctor)));
+    ThrowIfFailed(md3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&mCommandAlloctor)));
 
     // create command list
-    ThrowIfFailed(mD3dDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, mCommandAlloctor.Get(), nullptr, IID_PPV_ARGS(&mCommandList)));
+    ThrowIfFailed(md3dDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, mCommandAlloctor.Get(), nullptr, IID_PPV_ARGS(&mCommandList)));
 
     // Close command list
     mCommandList->Close();
@@ -375,14 +375,14 @@ void D3dApp::CreateRtvAndDsvDescHeap()
     rtvHeapDesc.NodeMask = 0;
     rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
     rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-    ThrowIfFailed(mD3dDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&mRtvHeap)));
+    ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&mRtvHeap)));
 
     D3D12_DESCRIPTOR_HEAP_DESC DsvHeapDesc;
     DsvHeapDesc.NumDescriptors = 1;
     DsvHeapDesc.NodeMask = 0;
     DsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
     DsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-    ThrowIfFailed(mD3dDevice->CreateDescriptorHeap(&DsvHeapDesc, IID_PPV_ARGS(&mDsvHeap)));
+    ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&DsvHeapDesc, IID_PPV_ARGS(&mDsvHeap)));
 }
 
 void D3dApp::LogAdapters() const
@@ -476,7 +476,7 @@ void D3dApp::CreateRenderTargetBufferAndView()
     for (UINT index = 0; index < mSwapChainBufferNumber; ++index)
     {
         ThrowIfFailed(mSwapChain->GetBuffer(index, IID_PPV_ARGS(&mSwapChainBuffer[index])));
-        mD3dDevice->CreateRenderTargetView(mSwapChainBuffer[index].Get(), nullptr, rtvHeaphandle);
+        md3dDevice->CreateRenderTargetView(mSwapChainBuffer[index].Get(), nullptr, rtvHeaphandle);
         rtvHeaphandle.Offset(1, mRtvDescHandleSize);
     }
 }
@@ -502,7 +502,7 @@ void D3dApp::CreateDepthStencilBufferAndView()
     optClear.DepthStencil.Depth = 1.0f;
     optClear.DepthStencil.Stencil = 0;
 
-    ThrowIfFailed(mD3dDevice->CreateCommittedResource(
+    ThrowIfFailed(md3dDevice->CreateCommittedResource(
         &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
         D3D12_HEAP_FLAG_NONE,
         &depthStencilDesc,
@@ -517,13 +517,13 @@ void D3dApp::CreateDepthStencilBufferAndView()
     dsvDesc.Format = mDepthStencilFormat;
     dsvDesc.Texture2D.MipSlice = 0;
     // create the depth stencil view
-    mD3dDevice->CreateDepthStencilView(mDepthStencilBuffer.Get(), &dsvDesc, DepthStencilView());
+    md3dDevice->CreateDepthStencilView(mDepthStencilBuffer.Get(), &dsvDesc, DepthStencilView());
 }
 
 void D3dApp::OnResize()
 {
     assert(mDxgiFactory);
-    assert(mD3dDevice);
+    assert(md3dDevice);
     assert(mSwapChain);
     assert(mCommandQueue);
     assert(mCommandAlloctor);

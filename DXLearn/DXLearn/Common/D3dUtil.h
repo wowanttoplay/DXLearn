@@ -15,15 +15,16 @@
 
 constexpr int gNumFrameResources = 3;
 
-#define SHADER_PATH "AppFactory/Shaders/"
-#define MODELS_PATH "AppFactory/Models/"
-
 enum class EPSoType : int
 {
 	Opaque = 0,
 	Opaque_wire,
 	Translucent,
 	AlphaTest,
+	MarkStencil,
+	StencilFilter,
+	TranslucentShadow,
+	TreeSprite,
 	Count
 };
 
@@ -32,6 +33,10 @@ enum class ERenderLayer : int
 	Opaque = 0,
 	Translucent,
 	AlphaTested,
+	AlphaTestedTreeSprites,
+	Reflected,
+	Shadow,
+	Mirrors,
 	Count
 };
 
