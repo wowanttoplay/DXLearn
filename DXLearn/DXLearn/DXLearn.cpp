@@ -1,8 +1,8 @@
 
 #include <DirectXColors.h>
 
-#include "AppFactory/TreeBillboardsApp/TreeBillboardsApp.h"
-#include "Common/BaseWindow.h"
+#include "AppFactory/ComputerApp/BlurApp/BlurApp.h"
+
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, int showCmd)
 {
@@ -13,7 +13,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, in
 
     try
     {
-        TreeBillboardsApp theApp(hInstance);
+        BlurApp theApp(hInstance);
         if (!theApp.Initialize())
         {
             return 0;

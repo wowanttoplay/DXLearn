@@ -25,6 +25,8 @@ enum class EPSoType : int
 	StencilFilter,
 	TranslucentShadow,
 	TreeSprite,
+	HorzBlur,
+	VertBlur,
 	Count
 };
 
